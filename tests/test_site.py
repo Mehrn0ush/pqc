@@ -247,6 +247,38 @@ class SiteBuildTests(unittest.TestCase):
         self.build(self.ctx(implementations=impls))
         self.assertNotIn("<script>alert", self.read("index.html"))
 
+    def test_standards_page_splits_active_drafts_from_published_rfcs(self):
+        self.build()
+        html_text = self.read("standards/index.html")
+        active_at = html_text.index("IETF active drafts")
+        details_at = html_text.index('<details id="published-rfcs"')
+        self.assertLess(active_at, details_at)
+        self.assertNotRegex(html_text[details_at : details_at + 40], r"<details[^>]* open")
+        active_part, rfc_part = html_text[active_at:details_at], html_text[details_at:]
+        by = {s["id"]: s for s in self.d["standards"] if s["body"] == "IETF"}
+        for sid, s in by.items():
+            target = rfc_part if s["status"] == "rfc-published" else active_part
+            self.assertIn(f'id="{sid}"', target, sid)
+            self.assertNotIn(f'id="{sid}"', active_part if target is rfc_part else rfc_part, sid)
+        # Every one of the tracked IETF documents is present in the HTML even though RFCs are collapsed.
+        self.assertEqual(sum(f'id="{sid}"' in html_text for sid in by), len(by))
+
+    def test_active_drafts_show_revision_and_last_updated(self):
+        self.build()
+        html_text = self.read("standards/index.html")
+        active_part = html_text[
+            html_text.index("IETF active drafts") : html_text.index('<details id="published-rfcs"')
+        ]
+        text = " ".join(visible_text(active_part).split())
+        self.assertIn("Revision", text)
+        self.assertIn("Last updated", text)
+        drafts = self.d["snapshot"]["drafts"]
+        for s in self.d["standards"]:
+            if s["body"] == "IETF" and s["status"] != "rfc-published":
+                d = drafts[s["datatracker_name"]]
+                self.assertIn(f"-{d['rev']}", text)
+                self.assertIn(d["updated_at"], text)
+
     def test_tag_commit_dates_are_labelled_approximate_and_official_ones_are_not(self):
         self.build()
         home = " ".join(visible_text(self.read("index.html")).split())
