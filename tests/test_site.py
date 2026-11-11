@@ -355,6 +355,13 @@ class CellRenderingTests(unittest.TestCase):
         self.assertIn("† inferred", visible_text(home))
         self.assertIn("Only a bug title mentions it.", visible_text(page))
 
+    def test_matrix_marker_links_to_the_reason_on_the_project_page(self):
+        home, page = self.build()
+        self.assertIn('href="/implementations/x/#reason-mldsa"', home)
+        self.assertIn('title="Only a bug title mentions it."', home)
+        self.assertIn('id="reason-mldsa"', page)
+        self.assertIn("† inferred: see reason", visible_text(home))
+
     def test_missing_version_is_never_blank(self):
         home, page = self.build()
         self.assertIn("version not stated", visible_text(home))

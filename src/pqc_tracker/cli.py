@@ -10,13 +10,14 @@ from __future__ import annotations
 
 import argparse
 import sys
+from datetime import date
 from pathlib import Path
 
 from pqc_tracker import changelog, history, issues, linkcheck, site, snapshot
 from pqc_tracker.errors import TrackerError
 from pqc_tracker.http import HttpFetcher
 from pqc_tracker.util import atomic_write, dumps_json, iso_z, load_json, utcnow
-from pqc_tracker.validate import ROOT, validate_data_dir
+from pqc_tracker.validate import ROOT, semantic_warnings, validate_data_dir
 
 
 def _data_dir(args) -> Path:
@@ -25,6 +26,8 @@ def _data_dir(args) -> Path:
 
 def cmd_validate(args) -> int:
     d = validate_data_dir(_data_dir(args))
+    for w in semantic_warnings(d["implementations"], date.today()):
+        print(f"warning: {w}")
     print(
         f"ok: {len(d['implementations'])} implementations, {len(d['standards'])} standards, "
         f"{len(d['changelog']['entries'])} changelog entries"

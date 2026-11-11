@@ -58,6 +58,7 @@ tbody th { font-weight: 600; }
 th .when, th .since, td .since, td .when { display: block; color: var(--muted); font-size: 0.8rem; font-weight: 400; margin-top: 0.15rem; }
 .badge { display: inline-block; font-weight: 600; font-size: 0.85rem; padding: 0.05rem 0.5rem; border: 1px solid currentColor; border-radius: 3px; white-space: nowrap; }
 .s-supported, .t-final, .t-rfc-published { color: var(--ok); }
+.s-implemented-unstated { color: var(--muted); }
 .s-experimental, .t-draft, .t-in-development, .t-wg-draft { color: var(--warn); }
 .s-planned, .t-iesg-evaluation, .t-rfc-ed-queue { color: var(--info); }
 .s-not-supported { color: var(--bad); }
