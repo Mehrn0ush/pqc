@@ -7,13 +7,16 @@ primary source that you have read.** Primary sources are the project's own relea
 documentation, changelog, or public API headers. Blog posts, news articles, social media, issue comments,
 and "I remember it did" are not evidence.
 
-If you cannot confirm a claim, leave it `unverified`. "I found no mention" is not evidence of
-`not-supported`; that status needs the project to say so.
+If you cannot confirm a claim, use `no-statement-found` and list every source you searched in
+`checked_sources`, or leave it `not-checked`. "I found no mention" is not evidence of `not-supported`; that
+status needs the project to say so. Source code alone never earns `supported`. If you conclude support from
+indirect evidence (a bug-fix title, a header), mark the cell `inferred` and give the reason.
 
 ## Correcting or adding a status
 
 1. Open `data/implementations.yaml` (or `data/standards.yaml`).
-2. Change `status`, `since_version`, `evidence_url`, `verified_on` (today's date, `YYYY-MM-DD`) and `note`.
+2. Change `status`, `since_version`, `evidence_url`, `evidence_type`, `evidence_strength`, `verified_on`
+   (today's date, `YYYY-MM-DD`) and `note`. See `docs/data.md` for the fields each status needs.
    Keep the note to a short factual phrase; do not paste text from the source.
 3. Run the checks:
 
@@ -37,8 +40,8 @@ source, update the YAML if something changed (with evidence), and close the issu
 
 ## Adding a project
 
-Add an entry to `data/implementations.yaml` with all four algorithms. Anything not confirmed is
-`unverified`. Choose a `release_source` (`github_release`, `github_tags` or `nss_release_notes`; the schema is
+Add an entry to `data/implementations.yaml` with all four algorithms. Anything not yet looked at is
+`not-checked`. Choose a `release_source` (`github_release`, `github_tags` or `nss_release_notes`; the schema is
 in `schemas/implementations.schema.json`). Adding a new source type means a collector and fixture-based tests
 in `src/pqc_tracker/sources.py`.
 

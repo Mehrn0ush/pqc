@@ -43,10 +43,25 @@ def semantic_errors(impls: list[dict], stds: list[dict], snapshot: dict | None, 
     errs += _dups([s["datatracker_name"] for s in stds if "datatracker_name" in s], "datatracker_name")
     for i in impls:
         for alg, c in i["algorithms"].items():
-            if date.fromisoformat(c["verified_on"]) > today:
-                errs.append(f"{i['id']}.{alg}: verified_on is in the future")
-            if c["status"] == "unverified" and c.get("since_version"):
-                errs.append(f"{i['id']}.{alg}: unverified claims cannot carry since_version")
+            where = f"{i['id']}.{alg}"
+            for key in ("verified_on", "checked_on"):
+                if key in c and date.fromisoformat(c[key]) > today:
+                    errs.append(f"{where}: {key} is in the future")
+            if c["status"] in ("supported", "experimental") and c.get("evidence_type") == "source-code":
+                if c["status"] == "supported" or c.get("evidence_strength") != "inferred":
+                    errs.append(
+                        f"{where}: source code alone is at most 'experimental' with inferred strength"
+                    )
+            if c.get("evidence_type") == "source-code" and c.get("evidence_strength") == "stated":
+                errs.append(f"{where}: source-code evidence cannot be 'stated'")
+            if alg == "hybrid_kex" and "scope" in c:
+                errs.append(f"{where}: scope does not apply to the hybrid key exchange column")
+            if (
+                alg != "hybrid_kex"
+                and c["status"] in ("supported", "experimental", "planned")
+                and "scope" not in c
+            ):
+                errs.append(f"{where}: scope is required")
     for s in stds:
         if date.fromisoformat(s["verified_on"]) > today:
             errs.append(f"{s['id']}: verified_on is in the future")

@@ -23,6 +23,8 @@ def urls_to_check(implementations: list[dict], standards: list[dict]) -> dict[st
         for alg, c in i["algorithms"].items():
             if c.get("evidence_url"):
                 out.setdefault(c["evidence_url"], []).append(f"{i['id']}.{alg}")
+            for u in c.get("checked_sources", []):
+                out.setdefault(u, []).append(f"{i['id']}.{alg} checked_sources")
     for s in standards:
         out.setdefault(s["source_url"], []).append(s["id"])
     return out

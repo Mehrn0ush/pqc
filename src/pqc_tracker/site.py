@@ -15,6 +15,8 @@ from pqc_tracker.config import (
     ALGORITHMS,
     ESSAY_LABEL,
     ESSAY_URL,
+    EVIDENCE_TYPE_LABELS,
+    HYBRID_COLUMN_HELP,
     ISSUES_URL,
     NEWSLETTER_URL,
     PULSE_URL,
@@ -34,7 +36,8 @@ STATUS_SYMBOL = {
     "experimental": "◐",
     "planned": "◔",
     "not-supported": "✕",
-    "unverified": "?",
+    "not-checked": "·",
+    "no-statement-found": "?",
 }
 KIND_LABEL = {
     "release": "New release",
@@ -78,7 +81,12 @@ class Context:
 
     @property
     def last_verified(self) -> str:
-        dates = [c["verified_on"] for i in self.implementations for c in i["algorithms"].values()]
+        dates = [
+            c.get("verified_on") or c.get("checked_on")
+            for i in self.implementations
+            for c in i["algorithms"].values()
+        ]
+        dates = [d for d in dates if d]
         dates += [s["verified_on"] for s in self.standards]
         return max(dates)
 
@@ -100,11 +108,33 @@ class Context:
 # ---------------------------------------------------------------- shared fragments
 
 
-def badge(status: str) -> str:
+def badge(status: str, *, hybrid_only: bool = False) -> str:
+    if hybrid_only:
+        # Text label as well as colour and shape: hybrid-only is not full support.
+        return (
+            f'<span class="badge s-{esc(status)} s-hybrid"><span aria-hidden="true">◑ </span>'
+            f"{esc(STATUS_LABELS[status])}, hybrid only</span>"
+        )
     return (
         f'<span class="badge s-{esc(status)}"><span aria-hidden="true">{STATUS_SYMBOL[status]} </span>'
         f"{esc(STATUS_LABELS[status])}</span>"
     )
+
+
+def cell_badge(c: dict) -> str:
+    """Status badge plus scheme (hybrid-only) and the visible 'inferred' marker."""
+    out = badge(c["status"], hybrid_only=c.get("scope") == "hybrid-only")
+    if c.get("scheme"):
+        out += f'<span class="scheme">only as {esc(c["scheme"])}</span>'
+    if c.get("evidence_strength") == "inferred":
+        out += f'<span class="inferred" title="{esc(c["strength_reason"])}">† inferred</span>'
+    return out
+
+
+def since_text(c: dict) -> str:
+    if c["status"] not in ("supported", "experimental"):
+        return ""
+    return f"since {esc(c['since_version'])}" if c.get("since_version") else "version not stated"
 
 
 def std_badge(status: str) -> str:
@@ -212,9 +242,14 @@ def legend() -> str:
         "experimental": "available but marked experimental or prototype",
         "planned": "announced by the project, not shipped",
         "not-supported": "stated by the project as not available",
-        "unverified": "not confirmed from a primary source",
+        "not-checked": "nobody has looked yet",
+        "no-statement-found": "we looked and found no primary source; this is not a statement that it is unsupported",
     }
     items = "".join(f"<li>{badge(k)} {esc(v)}</li>" for k, v in defs.items())
+    items += (
+        f"<li>{badge('supported', hybrid_only=True)} works only as the named hybrid scheme, not on its own</li>"
+        '<li><span class="inferred">† inferred</span> concluded from indirect evidence; the reason is shown</li>'
+    )
     return f'<ul class="legend" aria-label="Status legend">{items}</ul>'
 
 
@@ -246,9 +281,13 @@ def changes_list(ctx: Context, entries: list[dict], *, link_subject: bool = True
     return "".join(out)
 
 
+def hybrid_title(alg: str) -> str:
+    return f' title="{esc(HYBRID_COLUMN_HELP)}"' if alg == "hybrid_kex" else ""
+
+
 def matrix(ctx: Context) -> str:
     head = "".join(
-        f'<th scope="col">{esc(ALGORITHMS[a][0])}<br><span class="when">{esc(ALGORITHMS[a][1])}</span></th>'
+        f'<th scope="col"{hybrid_title(a)}>{esc(ALGORITHMS[a][0])}<br><span class="when">{esc(ALGORITHMS[a][1])}</span></th>'
         for a in ALGORITHMS
     )
     rows = []
@@ -258,12 +297,8 @@ def matrix(ctx: Context) -> str:
         cells = []
         for alg in ALGORITHMS:
             c = impl["algorithms"][alg]
-            since = (
-                f'<span class="since">since {esc(c["since_version"])}</span>'
-                if c.get("since_version")
-                else ""
-            )
-            cells.append(f"<td>{badge(c['status'])}{since}</td>")
+            since = f'<span class="since">{since_text(c)}</span>' if since_text(c) else ""
+            cells.append(f"<td>{cell_badge(c)}{since}</td>")
         latest = (
             f'<span class="when">latest {esc(rel["tag"])}'
             + (f", {esc(rel['published_at'])}" if rel.get("published_at") else "")
@@ -289,18 +324,26 @@ def matrix(ctx: Context) -> str:
 def home(ctx: Context) -> str:
     recent = ctx.entries[:5]
     n_unv = sum(
-        1 for i in ctx.implementations for c in i["algorithms"].values() if c["status"] == "unverified"
+        1
+        for i in ctx.implementations
+        for c in i["algorithms"].values()
+        if c["status"] == "no-statement-found"
+    )
+    n_unchecked = sum(
+        1 for i in ctx.implementations for c in i["algorithms"].values() if c["status"] == "not-checked"
     )
     body = (
         "<h1>Can I use post-quantum crypto yet?</h1>"
         '<p class="lede">Silastron PQC Tracker shows which cryptographic libraries and runtimes support the NIST '
         "post-quantum algorithms ML-KEM, ML-DSA and SLH-DSA and hybrid key exchange, and where the underlying "
-        "standards stand. Each status links to a primary source. Anything we could not confirm is marked "
-        "unverified. There are no scores or rankings: statuses only.</p>"
+        "standards stand. Each status links to a primary source. Where we looked and found no source it says "
+        "so, and that is not a statement that the feature is missing. There are no scores or rankings: "
+        "statuses only.</p>"
         f"{provenance_line(ctx)}"
         "<h2>Readiness matrix</h2>"
         f"{legend()}{matrix(ctx)}"
-        f'<p class="provenance">{n_unv} of {len(ctx.implementations) * len(ALGORITHMS)} claims are currently unverified. '
+        f'<p class="provenance">{n_unv} of {len(ctx.implementations) * len(ALGORITHMS)} cells are "no statement found" '
+        f"and {n_unchecked} are not checked yet. "
         "Hybrid key exchange means TLS 1.3 unless a row says otherwise (OpenSSH rows describe SSH).</p>"
         "<h2>Recent changes</h2>"
         f'{changes_list(ctx, recent)}<p><a href="/changes/">Full changelog</a> · <a href="/feed.xml">Atom feed</a></p>'
@@ -440,20 +483,50 @@ def changes_page(ctx: Context) -> str:
     )
 
 
+def since_cell(c: dict) -> str:
+    if c["status"] not in ("supported", "experimental"):
+        return DASH
+    if c.get("since_version"):
+        return esc(c["since_version"])
+    return f'version not stated<span class="when">{esc(c["since_note"])}</span>'
+
+
+def evidence_cell(c: dict) -> str:
+    if c["status"] == "not-checked":
+        return "Not checked yet"
+    if c["status"] == "no-statement-found":
+        links = "".join(
+            f'<li><a href="{esc(u)}" rel="noopener">{esc(u.removeprefix("https://"))}</a></li>'
+            for u in c["checked_sources"]
+        )
+        return f'Sources searched, {esc(c["checked_on"])}:<ul class="sources">{links}</ul>'
+    kind = EVIDENCE_TYPE_LABELS[c["evidence_type"]]
+    return (
+        f'<a href="{esc(c["evidence_url"])}" rel="noopener">Evidence</a>'
+        f'<span class="when">{esc(kind)}, {esc(c["evidence_strength"])}</span>'
+    )
+
+
+def note_cell(c: dict) -> str:
+    parts = []
+    if c.get("evidence_strength") == "inferred":
+        parts.append(f"<strong>Inferred:</strong> {esc(c['strength_reason'])}")
+    if c.get("scope") == "hybrid-only":
+        parts.append(f"Hybrid only: available only as {esc(c['scheme'])}.")
+    if c.get("note"):
+        parts.append(esc(c["note"]))
+    return " ".join(parts)
+
+
 def implementation_page(ctx: Context, impl: dict) -> str:
     rel = ctx.releases.get(impl["id"])
     rows = []
     for alg, (label, std) in ALGORITHMS.items():
         c = impl["algorithms"][alg]
-        ev = (
-            f'<a href="{esc(c["evidence_url"])}" rel="noopener">Evidence</a>'
-            if c.get("evidence_url")
-            else "None"
-        )
         rows.append(
-            f'<tr><th scope="row">{esc(label)}<span class="when">{esc(std)}</span></th><td>{badge(c["status"])}</td>'
-            f"<td>{esc(c['since_version']) if c.get('since_version') else DASH}</td><td>{ev}</td>"
-            f"<td>{esc(c['verified_on'])}</td><td>{esc(c.get('note', ''))}</td></tr>"
+            f'<tr><th scope="row"{hybrid_title(alg)}>{esc(label)}<span class="when">{esc(std)}</span></th>'
+            f"<td>{cell_badge(c)}</td><td>{since_cell(c)}</td><td>{evidence_cell(c)}</td>"
+            f"<td>{esc(c.get('verified_on') or c.get('checked_on') or '') or DASH}</td><td>{note_cell(c)}</td></tr>"
         )
     if rel:
         when = f", published {esc(rel['published_at'])}" if rel.get("published_at") else ""
@@ -474,7 +547,8 @@ def implementation_page(ctx: Context, impl: dict) -> str:
     body = (
         f"<h1>{esc(impl['name'])}</h1>"
         f'<p class="lede">{esc(impl["kind"].capitalize())}. <a href="{esc(impl["homepage"])}" rel="noopener">Project site</a>{repo}</p>'
-        f"{provenance_line(ctx)}<h2>Post-quantum support</h2>{legend()}"
+        f"{provenance_line(ctx)}<h2>Post-quantum support</h2>"
+        f"<p>{esc(HYBRID_COLUMN_HELP)}</p>{legend()}"
         '<div class="scroll" role="region" aria-label="Support statuses, scrollable" tabindex="0"><table>'
         "<caption>Support status per algorithm, with evidence.</caption><thead><tr>"
         '<th scope="col">Algorithm</th><th scope="col">Status</th><th scope="col">Since version</th>'
@@ -501,11 +575,14 @@ def methodology_page(ctx: Context) -> str:
 {provenance_line(ctx)}
 <h2>What each status means</h2>
 <dl>
-<dt>{badge("supported")}</dt><dd>A release of the project includes the feature and a primary source says so (release notes, official documentation, changelog or the project's own public header). "Since version" is the first version we found stating it, which may not be the true first version.</dd>
-<dt>{badge("experimental")}</dt><dd>Available, but the project itself calls it experimental, a prototype, or not for production.</dd>
-<dt>{badge("planned")}</dt><dd>The project has announced it but has not shipped it.</dd>
-<dt>{badge("not-supported")}</dt><dd>The project states that it is not available. We do not infer this from silence.</dd>
-<dt>{badge("unverified")}</dt><dd>We did not find or could not read a primary source. Not finding a mention is not evidence that something is unsupported, so these cells are never shown as "not supported". Please help by sending evidence.</dd>
+<dt>{badge("supported")}</dt><dd>A release of the project includes the feature and a primary source says so (release notes, official documentation, a changelog or an API reference). "Since version" is the first version we found stating it, which may not be the true first version; where no version is given the cell says "version not stated" and why. Source code alone never earns this status.</dd>
+<dt>{badge("experimental")}</dt><dd>Available, but the project itself calls it experimental, a prototype, or not for production. A header file or module with no statement of support level is shown here at most, marked inferred.</dd>
+<dt>{badge("planned")}</dt><dd>A maintainer has announced it but it has not shipped. An open request in an issue tracker is not enough.</dd>
+<dt>{badge("not-supported")}</dt><dd>The project explicitly states that it is not available. We never infer this from silence.</dd>
+<dt>{badge("no-statement-found")}</dt><dd>We looked and found no primary source. The cell lists the date and every source searched. This is not a statement that the feature is missing: it may exist without being documented, or we may have looked in the wrong place.</dd>
+<dt>{badge("not-checked")}</dt><dd>Nobody has looked yet.</dd>
+<dt>{badge("supported", hybrid_only=True)}</dt><dd>The algorithm is available only inside the named hybrid scheme (for example ML-KEM inside X25519MLKEM768), not as a standalone primitive.</dd>
+<dt><span class="inferred">† inferred</span></dt><dd>Every supported or experimental cell is tagged with an evidence type (release notes, official docs, changelog, API reference, source code or issue tracker) and a strength. "Stated" means the upstream source says the feature is supported. "Inferred" means we concluded it from indirect evidence, such as a bug-fix title or a header file; the one-line reason is shown next to the cell.</dd>
 </dl>
 <p>The matrix column "Hybrid key exchange" means TLS 1.3 groups such as X25519MLKEM768, except for OpenSSH, where it is SSH key exchange. Support for an algorithm inside a library does not mean a product built on that library has enabled it, and it does not mean FIPS validation.</p>
 <h2>Two kinds of data</h2>

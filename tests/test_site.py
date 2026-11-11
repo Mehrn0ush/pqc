@@ -9,6 +9,7 @@ from pathlib import Path
 from pqc_tracker import changelog as cl
 from pqc_tracker import site
 from pqc_tracker.validate import ROOT, validate_data_dir
+from tests.helpers import claim, impl
 
 NOW = datetime(2026, 11, 12, 8, 0, 0, tzinfo=UTC)
 
@@ -104,7 +105,7 @@ class SiteBuildTests(unittest.TestCase):
         ):
             self.assertIn(name, text)
         self.assertIn("Supported", text)
-        self.assertIn("Unverified", text)
+        self.assertIn("No statement found", text)
 
     def test_status_is_text_not_only_colour(self):
         self.build()
@@ -262,3 +263,61 @@ class SiteBuildTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CellRenderingTests(unittest.TestCase):
+    """How the richer claim model shows up in the static HTML."""
+
+    def build(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        d = validate_data_dir(ROOT / "data")
+        algs = {
+            "mlkem": claim(scope="hybrid-only", scheme="X25519MLKEM768"),
+            "mldsa": claim(
+                evidence_strength="inferred",
+                strength_reason="Only a bug title mentions it.",
+                since_version=None,
+                since_note="No versioned releases.",
+            ),
+            "slhdsa": {
+                "status": "no-statement-found",
+                "checked_on": "2026-11-11",
+                "checked_sources": ["https://example.org/changelog", "https://example.org/api"],
+                "note": "Nothing found.",
+            },
+        }
+        ctx = site.Context([impl(algs=algs)], d["standards"], d["snapshot"], d["status"], [], NOW)
+        out = Path(tmp.name)
+        site.build_site(ctx, out, ROOT / "schemas")
+        return (out / "index.html").read_text(), (out / "implementations" / "x" / "index.html").read_text()
+
+    def test_hybrid_only_is_labelled_in_text(self):
+        home, page = self.build()
+        for html_text in (home, page):
+            text = visible_text(html_text)
+            self.assertIn("Supported, hybrid only", text)
+            self.assertIn("only as X25519MLKEM768", text)
+
+    def test_inferred_cells_show_a_marker_and_the_reason(self):
+        home, page = self.build()
+        self.assertIn("† inferred", visible_text(home))
+        self.assertIn("Only a bug title mentions it.", visible_text(page))
+
+    def test_missing_version_is_never_blank(self):
+        home, page = self.build()
+        self.assertIn("version not stated", visible_text(home))
+        self.assertIn("No versioned releases.", visible_text(page))
+
+    def test_no_statement_found_lists_sources_and_date(self):
+        _, page = self.build()
+        text = visible_text(page)
+        self.assertIn("Sources searched, 2026-11-11", text)
+        self.assertIn("example.org/changelog", text)
+        self.assertIn('href="https://example.org/api"', page)
+
+    def test_hybrid_column_meaning_in_header_tooltip_and_on_project_page(self):
+        home, page = self.build()
+        self.assertRegex(home, r'<th scope="col" title="Hybrid key exchange means TLS 1.3')
+        self.assertIn("For OpenSSH it means SSH key exchange.", visible_text(page))
+        self.assertIn('title="Hybrid key exchange means TLS 1.3', page)
