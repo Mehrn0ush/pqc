@@ -57,8 +57,22 @@ def claim(**kw):
         "verified_on": "2026-11-11",
     }
     base.update(kw)
-    keep_null = base["status"] in ("supported", "experimental")
-    return {k: v for k, v in base.items() if v is not None or (k == "since_version" and keep_null)}
+    status = base["status"]
+    has_since = status in ("supported", "experimental")
+    if status == "planned":
+        base.setdefault("statement_date", "2026-07-14")
+        base.setdefault(
+            "maintainer_basis", {"kind": "commit-history", "detail": "merges PRs in the repository"}
+        )
+    if status == "experimental":
+        base.setdefault("experimental_term", "experimental")
+        base.setdefault("note", 'Upstream says "experimental".')
+    return {
+        k: v
+        for k, v in base.items()
+        if (v is not None or (k == "since_version" and has_since))
+        and (has_since or k not in ("since_version", "since_note"))
+    }
 
 
 def impl(id="x", name="X", algs=None, source=None):

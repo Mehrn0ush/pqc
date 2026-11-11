@@ -4,7 +4,6 @@ __pycache__/
 .venv/
 venv/
 dist/
-dist-baseline/
 .ruff_cache/
 .DS_Store
 .python-version

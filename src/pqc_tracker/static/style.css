@@ -55,9 +55,10 @@ caption { text-align: left; padding: 0.6rem 0.75rem; color: var(--muted); font-s
 th, td { text-align: left; vertical-align: top; padding: 0.55rem 0.75rem; border-top: 1px solid var(--border); }
 thead th { border-top: 0; color: var(--muted); font-weight: 600; white-space: nowrap; }
 tbody th { font-weight: 600; }
-th .when, td .since, td .when { display: block; color: var(--muted); font-size: 0.8rem; font-weight: 400; margin-top: 0.15rem; }
+th .when, th .since, td .since, td .when { display: block; color: var(--muted); font-size: 0.8rem; font-weight: 400; margin-top: 0.15rem; }
 .badge { display: inline-block; font-weight: 600; font-size: 0.85rem; padding: 0.05rem 0.5rem; border: 1px solid currentColor; border-radius: 3px; white-space: nowrap; }
 .s-supported, .t-final, .t-rfc-published { color: var(--ok); }
+.s-implemented-unstated { color: var(--muted); }
 .s-experimental, .t-draft, .t-in-development, .t-wg-draft { color: var(--warn); }
 .s-planned, .t-iesg-evaluation, .t-rfc-ed-queue { color: var(--info); }
 .s-not-supported { color: var(--bad); }
@@ -92,3 +93,9 @@ footer ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0
 .inferred { font-weight: 600; }
 .legend .inferred { display: inline; margin: 0; }
 ul.sources { margin: 0.25rem 0 0; padding-left: 1rem; font-size: 0.8rem; max-width: none; }
+details > summary { cursor: pointer; }
+details > summary h2 { display: inline; }
+details > summary:focus-visible { outline: 2px solid var(--link, currentColor); outline-offset: 2px; }
+table.evidence td:nth-child(2) { min-width: 13rem; }
+table.evidence td:nth-child(4) { min-width: 11rem; }
+table.evidence td:nth-child(6) { min-width: 20rem; }

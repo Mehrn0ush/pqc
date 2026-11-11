@@ -27,6 +27,9 @@ def urls_to_check(implementations: list[dict], standards: list[dict]) -> dict[st
                 out.setdefault(u, []).append(f"{i['id']}.{alg} checked_sources")
     for s in standards:
         out.setdefault(s["source_url"], []).append(s["id"])
+        for u in [s.get("stated_url"), *s.get("checked_sources", [])]:
+            if u:
+                out.setdefault(u, []).append(f"{s['id']} stated/checked")
     return out
 
 

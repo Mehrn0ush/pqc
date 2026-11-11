@@ -1,5 +1,5 @@
 {
-  "collected_at": "2026-11-11T07:42:48Z",
+  "collected_at": "2026-11-11T10:17:39Z",
   "drafts": {
     "draft-ietf-lamps-cms-composite-kem": {
       "iesg_state": "RFC Ed Queue",
@@ -164,61 +164,73 @@
   },
   "releases": {
     "aws-lc": {
+      "date_source": "official",
       "published_at": "2026-11-10",
       "tag": "v5.14.0",
       "url": "https://github.com/aws/aws-lc/releases/tag/v5.14.0"
     },
     "boringssl": {
+      "date_source": "official",
       "published_at": "2026-11-05",
       "tag": "0.20261105.0",
       "url": "https://github.com/google/boringssl/releases/tag/0.20261105.0"
     },
     "botan": {
+      "date_source": "official",
       "published_at": "2026-11-06",
       "tag": "3.14.1",
-      "url": "https://github.com/randombit/botan/tree/3.14.1"
+      "url": "https://botan.randombit.net/news.html"
     },
     "bouncycastle": {
+      "date_source": "official",
       "published_at": "2026-09-11",
       "tag": "r1rv86",
-      "url": "https://github.com/bcgit/bc-java/tree/r1rv86"
+      "url": "https://github.com/bcgit/bc-java/blob/main/docs/releasenotes.md"
     },
     "go": {
+      "date_source": "official",
       "published_at": "2026-11-10",
       "tag": "go1.27.4",
-      "url": "https://github.com/golang/go/tree/go1.27.4"
+      "url": "https://go.dev/doc/devel/release#go1.27.4"
     },
     "liboqs": {
+      "date_source": "official",
       "published_at": "2026-07-09",
       "tag": "0.16.0",
       "url": "https://github.com/open-quantum-safe/liboqs/releases/tag/0.16.0"
     },
     "nss": {
-      "published_at": null,
+      "date_source": "official",
+      "published_at": "2026-11-04",
       "tag": "NSS 3.133",
       "url": "https://firefox-source-docs.mozilla.org/security/nss/releases/nss_3_133.html"
     },
     "openjdk": {
+      "date_source": "tag-commit",
       "published_at": "2026-08-19",
       "tag": "jdk-27-ga",
       "url": "https://github.com/openjdk/jdk/tree/jdk-27-ga"
     },
     "openssh": {
-      "published_at": "2026-11-04",
+      "date_source": "official",
+      "published_at": "2026-11-05",
       "tag": "V_10_6_P2",
-      "url": "https://github.com/openssh/openssh-portable/tree/V_10_6_P2"
+      "url": "https://www.openssh.org/txt/release-10.6p2"
     },
     "openssl": {
+      "date_source": "official",
       "published_at": "2026-10-23",
       "tag": "openssl-4.1.0",
       "url": "https://github.com/openssl/openssl/releases/tag/openssl-4.1.0"
     },
     "rustls": {
+      "date_source": "official",
       "published_at": "2026-10-14",
       "tag": "v/0.23.46",
       "url": "https://github.com/rustls/rustls/releases/tag/v/0.23.46"
     },
     "wolfssl": {
+      "date_source": "official",
       "published_at": "2026-09-27",
       "tag": "v5.9.4-stable",
       "url": "https://github.com/wolfSSL/wolfssl/releases/tag/v5.9.4-stable"

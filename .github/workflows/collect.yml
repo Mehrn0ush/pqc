@@ -6,6 +6,11 @@ name: Collect
 
 on:
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run every collector and print the diff; commit nothing and open no issues"
+        type: boolean
+        default: false
   schedule:
     - cron: "17 6 * * *"
 
@@ -42,10 +47,24 @@ jobs:
       - name: Collect (fails closed)
         run: pqc-tracker collect --entries-out "$RUNNER_TEMP/new-entries.json"
 
+      - name: Dry run, show what would change
+        if: inputs.dry_run
+        run: |
+          set -euo pipefail
+          echo "## Dry run: nothing is committed and no issues are opened" | tee -a "$GITHUB_STEP_SUMMARY"
+          git status --short data
+          git --no-pager diff --stat -- data
+          git --no-pager diff -- data
+          echo "New changelog entries:"
+          cat "$RUNNER_TEMP/new-entries.json"
+          pqc-tracker issues --dry-run --repo "$GITHUB_REPOSITORY" --entries "$RUNNER_TEMP/new-entries.json"
+
       - name: Open review-needed issues
+        if: ${{ !inputs.dry_run }}
         run: pqc-tracker issues --repo "$GITHUB_REPOSITORY" --entries "$RUNNER_TEMP/new-entries.json"
 
       - name: Commit collected data
+        if: ${{ !inputs.dry_run }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -59,7 +78,7 @@ jobs:
           fi
 
       - name: Record failure and keep last good snapshot
-        if: failure()
+        if: failure() && !inputs.dry_run
         run: |
           set -euo pipefail
           git checkout -- data/snapshots data/changelog.json

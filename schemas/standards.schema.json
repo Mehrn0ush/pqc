@@ -7,30 +7,177 @@
   "items": {
     "type": "object",
     "additionalProperties": false,
-    "required": ["id", "title", "body", "status", "status_date", "source_url", "verified_on"],
+    "required": [
+      "id",
+      "title",
+      "body",
+      "status",
+      "status_date",
+      "source_url",
+      "verified_on"
+    ],
     "properties": {
-      "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
-      "title": { "type": "string", "minLength": 1 },
-      "body": { "enum": ["NIST", "IETF"] },
-      "group": { "type": "string", "description": "IETF working group acronym" },
-      "datatracker_name": { "type": "string", "pattern": "^draft-[a-z0-9-]+$" },
-      "status": {
+      "id": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1
+      },
+      "body": {
         "enum": [
-          "final", "draft", "in-development",
-          "wg-draft", "iesg-evaluation", "rfc-ed-queue", "rfc-published",
-          "unverified"
+          "NIST",
+          "IETF"
         ]
       },
-      "rfc": { "type": "string", "pattern": "^RFC [0-9]+$" },
-      "status_date": { "type": ["string", "null"], "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
-      "source_url": { "type": "string", "pattern": "^https://[^\\s]+$" },
-      "verified_on": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
-      "note": { "type": "string", "maxLength": 500 }
+      "group": {
+        "type": "string",
+        "description": "IETF working group acronym"
+      },
+      "datatracker_name": {
+        "type": "string",
+        "pattern": "^draft-[a-z0-9-]+$"
+      },
+      "status": {
+        "enum": [
+          "final",
+          "draft",
+          "in-development",
+          "wg-draft",
+          "iesg-evaluation",
+          "rfc-ed-queue",
+          "rfc-published"
+        ]
+      },
+      "rfc": {
+        "type": "string",
+        "pattern": "^RFC [0-9]+$"
+      },
+      "status_date": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+      },
+      "source_url": {
+        "type": "string",
+        "pattern": "^https://[^\\s]+$"
+      },
+      "verified_on": {
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+      },
+      "note": {
+        "type": "string",
+        "maxLength": 500
+      },
+      "stated_status": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80,
+        "description": "How NIST itself describes the stage, in NIST's words"
+      },
+      "stated_quote": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "stated_url": {
+        "type": "string",
+        "pattern": "^https://[^\\s]+$",
+        "description": "The exact page that states it"
+      },
+      "checked_on": {
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+      },
+      "checked_sources": {
+        "type": "array",
+        "minItems": 1,
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "pattern": "^https://[^\\s]+$"
+        }
+      },
+      "no_draft_found": {
+        "type": "boolean",
+        "description": "True when the listed sources were searched for a draft publication and none was found"
+      }
     },
     "allOf": [
       {
-        "if": { "properties": { "body": { "const": "IETF" } } },
-        "then": { "required": ["datatracker_name", "group"] }
+        "if": {
+          "properties": {
+            "body": {
+              "const": "IETF"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "datatracker_name",
+            "group"
+          ]
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "status": {
+              "const": "in-development"
+            }
+          },
+          "required": [
+            "status"
+          ]
+        },
+        "then": {
+          "required": [
+            "stated_status",
+            "stated_quote",
+            "stated_url",
+            "checked_on",
+            "checked_sources"
+          ]
+        },
+        "else": {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "stated_status"
+                ]
+              },
+              {
+                "required": [
+                  "no_draft_found"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "no_draft_found": {
+              "const": true
+            }
+          },
+          "required": [
+            "no_draft_found"
+          ]
+        },
+        "then": {
+          "properties": {
+            "status": {
+              "const": "in-development"
+            }
+          }
+        }
       }
     ]
   }

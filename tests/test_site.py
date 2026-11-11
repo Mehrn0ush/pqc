@@ -247,6 +247,61 @@ class SiteBuildTests(unittest.TestCase):
         self.build(self.ctx(implementations=impls))
         self.assertNotIn("<script>alert", self.read("index.html"))
 
+    def test_standards_page_splits_active_drafts_from_published_rfcs(self):
+        self.build()
+        html_text = self.read("standards/index.html")
+        active_at = html_text.index("IETF active drafts")
+        details_at = html_text.index('<details id="published-rfcs"')
+        self.assertLess(active_at, details_at)
+        self.assertNotRegex(html_text[details_at : details_at + 40], r"<details[^>]* open")
+        active_part, rfc_part = html_text[active_at:details_at], html_text[details_at:]
+        by = {s["id"]: s for s in self.d["standards"] if s["body"] == "IETF"}
+        for sid, s in by.items():
+            target = rfc_part if s["status"] == "rfc-published" else active_part
+            self.assertIn(f'id="{sid}"', target, sid)
+            self.assertNotIn(f'id="{sid}"', active_part if target is rfc_part else rfc_part, sid)
+        # Every one of the tracked IETF documents is present in the HTML even though RFCs are collapsed.
+        self.assertEqual(sum(f'id="{sid}"' in html_text for sid in by), len(by))
+
+    def test_active_drafts_show_revision_and_last_updated(self):
+        self.build()
+        html_text = self.read("standards/index.html")
+        active_part = html_text[
+            html_text.index("IETF active drafts") : html_text.index('<details id="published-rfcs"')
+        ]
+        text = " ".join(visible_text(active_part).split())
+        self.assertIn("Revision", text)
+        self.assertIn("Last updated", text)
+        drafts = self.d["snapshot"]["drafts"]
+        for s in self.d["standards"]:
+            if s["body"] == "IETF" and s["status"] != "rfc-published":
+                d = drafts[s["datatracker_name"]]
+                self.assertIn(f"-{d['rev']}", text)
+                self.assertIn(d["updated_at"], text)
+
+    def test_tag_commit_dates_are_labelled_approximate_and_official_ones_are_not(self):
+        self.build()
+        home = " ".join(visible_text(self.read("index.html")).split())
+        page = " ".join(visible_text(self.read("implementations/openjdk/index.html")).split())
+        go = " ".join(visible_text(self.read("implementations/go/index.html")).split())
+        snap = self.d["snapshot"]["releases"]
+        self.assertEqual(snap["openjdk"]["date_source"], "tag-commit")
+        self.assertIn(f"{snap['openjdk']['published_at']} (approximate)", home)
+        self.assertIn("approximate, from the tagged commit", page)
+        self.assertEqual(snap["go"]["date_source"], "official")
+        self.assertIn(f"published {snap['go']['published_at']}", go)
+        self.assertNotIn("approximate", go.split("Latest release")[1].split("Change history")[0])
+
+    def test_fips_206_phrasing_names_nist_page_date_and_sources(self):
+        self.build()
+        text = " ".join(visible_text(self.read("standards/index.html")).split())
+        self.assertRegex(
+            text,
+            r"NIST's project page describes this as in development \(checked 2026-\d\d-\d\d\); "
+            r"no draft publication was found in",
+        )
+        self.assertIn("csrc.nist.gov: drafts-open-for-comment", text)
+
     def test_sitemap_lists_all_pages(self):
         self.build()
         sm = self.read("sitemap.xml")
@@ -254,15 +309,11 @@ class SiteBuildTests(unittest.TestCase):
 
     def test_status_change_flows_into_published_changelog(self):
         base = cl.statuses_of(self.d["implementations"], self.d["standards"])
-        base["implementations"]["go"]["slhdsa"] = "planned"
+        base["implementations"]["go"]["slhdsa"] = "not-checked"
         new = cl.diff_statuses(base, self.d["implementations"], self.d["standards"], "2026-11-12")
         self.assertEqual(len(new), 1)
         self.build(self.ctx(entries=cl.merge_for_publication(new)))
         self.assertIn("Confirmed by a person", self.read("implementations/go/index.html"))
-
-
-if __name__ == "__main__":
-    unittest.main()
 
 
 class CellRenderingTests(unittest.TestCase):
@@ -304,6 +355,13 @@ class CellRenderingTests(unittest.TestCase):
         self.assertIn("† inferred", visible_text(home))
         self.assertIn("Only a bug title mentions it.", visible_text(page))
 
+    def test_matrix_marker_links_to_the_reason_on_the_project_page(self):
+        home, page = self.build()
+        self.assertIn('href="/implementations/x/#reason-mldsa"', home)
+        self.assertIn('title="Only a bug title mentions it."', home)
+        self.assertIn('id="reason-mldsa"', page)
+        self.assertIn("† inferred: see reason", visible_text(home))
+
     def test_missing_version_is_never_blank(self):
         home, page = self.build()
         self.assertIn("version not stated", visible_text(home))
@@ -321,3 +379,66 @@ class CellRenderingTests(unittest.TestCase):
         self.assertRegex(home, r'<th scope="col" title="Hybrid key exchange means TLS 1.3')
         self.assertIn("For OpenSSH it means SSH key exchange.", visible_text(page))
         self.assertIn('title="Hybrid key exchange means TLS 1.3', page)
+
+
+class AtomFeedTests(unittest.TestCase):
+    """The RFC 4287 'MUST' rules for the elements this feed uses (no network, no external schema)."""
+
+    ATOM = "{http://www.w3.org/2005/Atom}"
+
+    def feed(self, entries):
+        d = validate_data_dir(ROOT / "data")
+        ctx = site.Context(d["implementations"], d["standards"], d["snapshot"], d["status"], entries, NOW)
+        import xml.etree.ElementTree as ET
+
+        return ET.fromstring(site.feed_xml(ctx))
+
+    def entries(self):
+        base = dict(subject_type="implementation", subject_id="openssl", detected_by="machine")
+        return [
+            dict(id="a" * 16, date="2026-11-10", kind="release", title="OpenSSL: new release 4.1.0", **base),
+            dict(
+                id="b" * 16,
+                date="2026-11-12",
+                kind="tracking-began",
+                title="Tracking began 2026-11-12: 12 projects",
+                url="https://github.com/Mehrn0ush/pqc/commit/abc",
+                **{**base, "detected_by": "human", "subject_type": "tracker", "subject_id": "tracker"},
+            ),
+        ]
+
+    def check(self, root):
+        A = self.ATOM
+        self.assertEqual(root.tag, A + "feed")
+        for req in ("id", "title", "updated"):
+            self.assertEqual(len(root.findall(A + req)), 1, req)
+        self.assertTrue(root.find(A + "author/" + A + "name") is not None)
+        rfc3339 = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+        self.assertRegex(root.find(A + "updated").text, rfc3339)
+        rels = [link.get("rel", "alternate") for link in root.findall(A + "link")]
+        self.assertIn("self", rels)
+        self.assertEqual(rels.count("alternate"), 1)
+        ids = []
+        for e in root.findall(A + "entry"):
+            for req in ("id", "title", "updated"):
+                self.assertEqual(len(e.findall(A + req)), 1, req)
+            self.assertRegex(e.find(A + "updated").text, rfc3339)
+            if e.find(A + "content") is None:
+                alts = [x for x in e.findall(A + "link") if x.get("rel", "alternate") == "alternate"]
+                self.assertTrue(alts, "an entry without content needs an alternate link")
+            ids.append(e.find(A + "id").text)
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertTrue(all(i.startswith("tag:") for i in ids))
+
+    def test_feed_with_entries_follows_rfc_4287(self):
+        root = self.feed(sorted(self.entries(), key=lambda e: e["date"], reverse=True))
+        self.check(root)
+        self.assertEqual(len(root.findall(self.ATOM + "entry")), 2)
+        self.assertEqual(root.find(self.ATOM + "updated").text, "2026-11-12T00:00:00Z")
+
+    def test_empty_feed_follows_rfc_4287(self):
+        self.check(self.feed([]))
+
+
+if __name__ == "__main__":
+    unittest.main()

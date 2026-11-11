@@ -15,11 +15,11 @@ SCHEMAS = ROOT / "schemas"
 
 class RealDataTests(unittest.TestCase):
     def test_repository_data_is_valid(self):
-        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1))
+        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1), check_expiry=False)
         self.assertGreaterEqual(len(d["implementations"]), 12)
 
     def test_seed_scope_is_complete(self):
-        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1))
+        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1), check_expiry=False)
         ids = {i["id"] for i in d["implementations"]}
         self.assertEqual(
             ids,
@@ -53,7 +53,7 @@ class RealDataTests(unittest.TestCase):
         self.assertEqual(groups, {"tls", "lamps", "pquip"})
 
     def test_every_evidenced_claim_has_evidence_and_date(self):
-        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1))
+        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1), check_expiry=False)
         for i in d["implementations"]:
             for alg, c in i["algorithms"].items():
                 if c["status"] in ("not-checked", "no-statement-found"):
@@ -63,12 +63,40 @@ class RealDataTests(unittest.TestCase):
                 self.assertIn(c["evidence_strength"], ("stated", "inferred"))
 
     def test_every_no_statement_cell_lists_sources_searched(self):
-        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1))
+        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1), check_expiry=False)
         for i in d["implementations"]:
             for alg, c in i["algorithms"].items():
                 if c["status"] == "no-statement-found":
                     self.assertTrue(c["checked_sources"], (i["id"], alg))
                     self.assertTrue(c["checked_on"])
+
+
+class NistStatementTests(unittest.TestCase):
+    def test_in_development_needs_nist_wording_page_date_and_sources(self):
+        self.assertTrue(schema_errors("standards", [std(status="in-development")], SCHEMAS))
+        ok = std(
+            status="in-development",
+            stated_status="in development",
+            stated_quote="q",
+            stated_url="https://example.org/p",
+            checked_on="2026-11-11",
+            checked_sources=["https://example.org/a"],
+            no_draft_found=True,
+        )
+        self.assertEqual(schema_errors("standards", [ok], SCHEMAS), [])
+
+    def test_no_draft_found_only_for_in_development(self):
+        self.assertTrue(schema_errors("standards", [std(status="final", no_draft_found=True)], SCHEMAS))
+
+    def test_fips_206_and_hqc_record_what_nist_says_and_where_we_looked(self):
+        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1), check_expiry=False)
+        by = {s["id"]: s for s in d["standards"]}
+        for sid in ("fips-206", "hqc"):
+            s = by[sid]
+            self.assertTrue(s["no_draft_found"], sid)
+            self.assertGreaterEqual(len(s["checked_sources"]), 5, sid)
+            self.assertTrue(s["stated_url"].startswith("https://csrc.nist.gov/"), sid)
+            self.assertTrue(s["checked_on"])
 
 
 class SchemaTests(unittest.TestCase):
@@ -255,6 +283,110 @@ class DirTests(unittest.TestCase):
                 validate_data_dir(d)
             self.assertIn("implementations", str(cm.exception))
             self.assertIn("standards", str(cm.exception))
+
+
+class ThirdPassStatusTests(unittest.TestCase):
+    TODAY = date(2026, 11, 12)
+
+    def errs(self, c, alg="mlkem"):
+        return semantic_errors([impl(algs={alg: c})], [], None, self.TODAY)
+
+    def schema(self, c):
+        data = [impl(algs={"mlkem": c})]
+        data[0]["algorithms"]["mldsa"] = {"status": "not-checked"}
+        return schema_errors("implementations", data, SCHEMAS)
+
+    def src(self, **kw):
+        return claim(
+            status="implemented-unstated",
+            evidence_type="source-code",
+            evidence_strength="inferred",
+            strength_reason="header",
+            **kw,
+        )
+
+    def test_source_code_maps_to_implemented_unstated(self):
+        self.assertEqual(self.errs(self.src()), [])
+        self.assertEqual(self.schema(self.src()), [])
+        for status in ("supported", "planned"):
+            bad = claim(
+                status=status, evidence_type="source-code", evidence_strength="inferred", strength_reason="h"
+            )
+            self.assertTrue(any("source code alone" in e for e in self.errs(bad)), status)
+
+    def test_experimental_needs_the_quoted_upstream_term(self):
+        c = claim(status="experimental", experimental_term="preview", note='Docs call it "preview".')
+        self.assertEqual(self.errs(c), [])
+        self.assertEqual(self.schema(c), [])
+        c["note"] = "Docs call it preview."
+        self.assertTrue(any("quote the term" in e for e in self.errs(c)))
+        c.pop("experimental_term")
+        self.assertTrue(self.schema(c))
+        src = self.src()
+        src.update(status="experimental", experimental_term="experimental", note='Header: "experimental".')
+        self.assertEqual(self.errs(src), [])
+
+    def test_experimental_term_only_allowed_on_experimental(self):
+        self.assertTrue(self.schema(claim(experimental_term="preview")))
+
+    def test_implemented_unstated_carries_no_version(self):
+        bad = self.src()
+        bad["since_version"] = "1.0"
+        self.assertTrue(self.schema(bad))
+
+    def test_first_party_deployment_is_always_inferred(self):
+        ok = claim(
+            evidence_type="first-party-deployment",
+            evidence_strength="inferred",
+            strength_reason="Product 1.0 ships it.",
+        )
+        self.assertEqual(self.errs(ok), [])
+        self.assertTrue(
+            any("must be 'inferred'" in e for e in self.errs(claim(evidence_type="first-party-deployment")))
+        )
+        bad = claim(
+            status="planned",
+            evidence_type="first-party-deployment",
+            evidence_strength="inferred",
+            strength_reason="x",
+        )
+        self.assertTrue(any("cannot support" in e for e in self.errs(bad)))
+
+    def test_planned_needs_statement_date_and_basis(self):
+        c = claim(status="planned")
+        self.assertEqual(self.errs(c), [])
+        self.assertEqual(self.schema(c), [])
+        for k in ("statement_date", "maintainer_basis"):
+            missing = {x: v for x, v in c.items() if x != k}
+            self.assertTrue(self.schema(missing), k)
+
+    def test_planned_expires_after_twelve_months(self):
+        self.assertEqual(self.errs(claim(status="planned", statement_date="2025-11-12")), [])
+        errs = self.errs(claim(status="planned", statement_date="2025-11-11"))
+        self.assertTrue(any("more than 365 days old" in e and "no-statement-found" in e for e in errs), errs)
+
+    def test_planned_expires_when_target_passes(self):
+        c = claim(status="planned", statement_target_date="2026-06-30")
+        self.assertTrue(any("target" in e and "passed" in e for e in self.errs(c)))
+        c["statement_target_date"] = "2027-06-30"
+        self.assertEqual(self.errs(c), [])
+
+    def test_expiry_check_can_be_skipped_for_shape_tests_only(self):
+        old = [impl(algs={"mlkem": claim(status="planned", statement_date="2020-01-01")})]
+        self.assertTrue(semantic_errors(old, [], None, self.TODAY))
+        self.assertEqual(semantic_errors(old, [], None, self.TODAY, check_expiry=False), [])
+
+    def test_warning_before_a_planned_cell_expires(self):
+        from pqc_tracker.validate import semantic_warnings
+
+        soon = [impl(algs={"mlkem": claim(status="planned", statement_date="2025-12-01")})]
+        self.assertEqual(len(semantic_warnings(soon, self.TODAY)), 1)
+        fresh = [impl(algs={"mlkem": claim(status="planned", statement_date="2026-07-14")})]
+        self.assertEqual(semantic_warnings(fresh, self.TODAY), [])
+
+    def test_real_data_planned_cells_are_current(self):
+        """The build fails, on its own, the day a planned cell goes stale."""
+        validate_data_dir(ROOT / "data")
 
 
 if __name__ == "__main__":

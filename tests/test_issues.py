@@ -90,6 +90,13 @@ class ApplyTests(unittest.TestCase):
         self.assertEqual(issues.apply(f, repo, [release_entry("1.1")], [impl()]), [])
         self.assertEqual([c for c in f.calls if c[0] == "POST"], [])
 
+    def test_preview_reads_issues_but_changes_nothing(self):
+        repo = "o/r"
+        f = FakeFetcher({f"{API}/repos/{repo}/issues?labels=review-needed&state=all&per_page=100&page=1": []})
+        actions = issues.preview(f, repo, [release_entry("1.1")], [impl()])
+        self.assertEqual([a.kind for a in actions], ["create"])
+        self.assertEqual([c for c in f.calls if c[0] != "GET"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

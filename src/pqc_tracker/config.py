@@ -26,6 +26,7 @@ ALGORITHMS = {
 
 STATUS_LABELS = {
     "supported": "Supported",
+    "implemented-unstated": "Implemented, support level not stated",
     "experimental": "Experimental",
     "planned": "Planned",
     "not-supported": "Not supported",
@@ -39,6 +40,7 @@ EVIDENCE_TYPE_LABELS = {
     "changelog": "changelog",
     "api-reference": "API reference",
     "source-code": "source code",
+    "first-party-deployment": "first-party deployment",
     "issue-tracker": "issue tracker",
 }
 
@@ -55,5 +57,12 @@ STANDARD_STATUS_LABELS = {
     "iesg-evaluation": "IESG evaluation",
     "rfc-ed-queue": "RFC Editor queue",
     "rfc-published": "RFC published",
-    "unverified": "Unverified",
+}
+
+MAINTAINER_BASIS_LABELS = {
+    "maintainers-file": "a MAINTAINERS file",
+    "codeowners": "a CODEOWNERS file",
+    "org-membership": "organisation membership shown on the profile",
+    "governance-page": "the project's governance page",
+    "commit-history": "commit history alone (no file, profile or governance page confirms the role)",
 }

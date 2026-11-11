@@ -3,8 +3,8 @@
 Two kinds of entry, never mixed up:
 - machine-detected facts (new release, new draft revision, draft state change), found by diffing
   consecutive snapshots. They say nothing about support status.
-- human-confirmed status changes, found by diffing the YAML files against the statuses of the
-  previously published build.
+- human-confirmed status changes, derived from the git history of data/implementations.yaml and
+  data/standards.yaml (see history.py). They are never stored, so they can always be rebuilt from a clone.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from pqc_tracker.util import short_hash
 SCHEMA_VERSION = "1.0.0"
 
 
-def _entry(
+def entry(
     *,
     date: str,
     kind: str,
@@ -75,7 +75,7 @@ def diff_snapshots(
             continue
         name = impl_names.get(pid, pid)
         out.append(
-            _entry(
+            entry(
                 date=rel["published_at"] or detected_on,
                 kind="release",
                 subject_type="implementation",
@@ -93,9 +93,11 @@ def diff_snapshots(
         if old is None:
             continue
         sid = draft_ids.get(dname, dname)
+        if old["state"] == "rfc":
+            continue  # already published: only active drafts and a draft becoming an RFC are logged
         if old["rev"] != d["rev"] and d["state"] != "rfc":
             out.append(
-                _entry(
+                entry(
                     date=d["updated_at"],
                     kind="draft-revision",
                     subject_type="standard",
@@ -112,7 +114,7 @@ def diff_snapshots(
             was = _draft_label(old) if old["state"] != "active" else (old.get("iesg_state") or "active")
             now_ = _draft_label(d) if d["state"] != "active" else (d.get("iesg_state") or "active")
             out.append(
-                _entry(
+                entry(
                     date=d["updated_at"],
                     kind="draft-state",
                     subject_type="standard",
@@ -136,7 +138,7 @@ def append_entries(log: dict, entries: list[dict]) -> dict:
 
 
 def statuses_of(implementations: list[dict], standards: list[dict]) -> dict:
-    """The compact status map stored with each published build and used as the next build's baseline."""
+    """The compact status map of one version of the YAML files (the 'before' side of a diff)."""
     return {
         "schema_version": SCHEMA_VERSION,
         "implementations": {
@@ -151,9 +153,11 @@ def diff_statuses(
     implementations: list[dict],
     standards: list[dict],
     built_on: str,
+    ref: str | None = None,
 ) -> list[dict]:
-    """Human-confirmed status changes: YAML now versus the previously published build.
-    No baseline (first deploy) means no entries."""
+    """Human-confirmed status changes between the statuses in `baseline` and the YAML now. `ref` (a commit
+    id) is part of every entry id, so two changes to one cell on the same day stay distinct.
+    No baseline means no entries."""
     if baseline is None:
         return []
     out: list[dict] = []
@@ -162,7 +166,7 @@ def diff_statuses(
         old = base_impl.get(impl["id"])
         if old is None:
             out.append(
-                _entry(
+                entry(
                     date=built_on,
                     kind="status-change",
                     subject_type="implementation",
@@ -170,7 +174,7 @@ def diff_statuses(
                     title=f"{impl['name']} added to the tracker",
                     detected_by="human",
                     to="added",
-                    id_parts=("added", built_on),
+                    id_parts=("added", built_on, ref),
                 )
             )
             continue
@@ -179,7 +183,7 @@ def diff_statuses(
                 label = ALGORITHMS[alg][0]
                 was = STATUS_LABELS.get(old.get(alg, ""), "not tracked")
                 out.append(
-                    _entry(
+                    entry(
                         date=built_on,
                         kind="status-change",
                         subject_type="implementation",
@@ -190,15 +194,17 @@ def diff_statuses(
                         frm=old.get(alg),
                         to=claim["status"],
                         url=claim.get("evidence_url"),
-                        id_parts=(claim["status"], built_on),
+                        id_parts=(claim["status"], built_on, ref),
                     )
                 )
     base_std = baseline.get("standards", {})
     for std in standards:
         old = base_std.get(std["id"])
         if old is None:
+            if std["body"] == "IETF" and std["status"] == "rfc-published":
+                continue  # a document that is already an RFC is not news
             out.append(
-                _entry(
+                entry(
                     date=built_on,
                     kind="status-change",
                     subject_type="standard",
@@ -206,12 +212,12 @@ def diff_statuses(
                     title=f"{std['title']} added to the tracker",
                     detected_by="human",
                     to="added",
-                    id_parts=("added", built_on),
+                    id_parts=("added", built_on, ref),
                 )
             )
         elif old != std["status"]:
             out.append(
-                _entry(
+                entry(
                     date=built_on,
                     kind="status-change",
                     subject_type="standard",
@@ -224,15 +230,15 @@ def diff_statuses(
                     frm=old,
                     to=std["status"],
                     url=std["source_url"],
-                    id_parts=(std["status"], built_on),
+                    id_parts=(std["status"], built_on, ref),
                 )
             )
     return out
 
 
 def merge_for_publication(*groups: list[dict]) -> list[dict]:
-    """Union of the repo log, the previously published log and newly diffed entries, de-duplicated by
-    id (first occurrence wins) and sorted newest first. Nothing already published can disappear."""
+    """Union of the committed machine log and the entries derived from git history, de-duplicated by
+    id (first occurrence wins) and sorted newest first."""
     seen: dict[str, dict] = {}
     for group in groups:
         for e in group:

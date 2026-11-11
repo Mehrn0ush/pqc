@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import html
 import json
+import re
 import shutil
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlparse
 from xml.sax.saxutils import escape as xml_escape
 
-from pqc_tracker import changelog as cl
 from pqc_tracker.config import (
     ALGORITHMS,
     ESSAY_LABEL,
@@ -18,6 +19,7 @@ from pqc_tracker.config import (
     EVIDENCE_TYPE_LABELS,
     HYBRID_COLUMN_HELP,
     ISSUES_URL,
+    MAINTAINER_BASIS_LABELS,
     NEWSLETTER_URL,
     PULSE_URL,
     REPO_URL,
@@ -33,6 +35,7 @@ from pqc_tracker.util import dumps_json, iso_z, parse_iso_z
 STATIC = Path(__file__).parent / "static"
 STATUS_SYMBOL = {
     "supported": "✓",
+    "implemented-unstated": "◌",
     "experimental": "◐",
     "planned": "◔",
     "not-supported": "✕",
@@ -44,6 +47,7 @@ KIND_LABEL = {
     "draft-revision": "Draft revision",
     "draft-state": "Draft state",
     "status-change": "Status change",
+    "tracking-began": "Tracking began",
 }
 NAV = [
     ("/", "Readiness"),
@@ -121,13 +125,30 @@ def badge(status: str, *, hybrid_only: bool = False) -> str:
     )
 
 
-def cell_badge(c: dict) -> str:
-    """Status badge plus scheme (hybrid-only) and the visible 'inferred' marker."""
+def linkify(escaped: str) -> str:
+    """Turn https URLs in already-escaped note text into links."""
+    return re.sub(
+        r"https://[^\s<]+[^\s<.,;:)'\"]",
+        lambda m: f'<a href="{m.group(0)}" rel="noopener">{m.group(0).removeprefix("https://")}</a>',
+        escaped,
+    )
+
+
+def cell_badge(c: dict, reason_href: str | None = None) -> str:
+    """Status badge plus scheme (hybrid-only) and the visible 'inferred' marker.
+
+    With `reason_href` (the matrix) the marker is a link to the reason on the project page; the tooltip is an
+    extra, not the only route.
+    """
     out = badge(c["status"], hybrid_only=c.get("scope") == "hybrid-only")
     if c.get("scheme"):
         out += f'<span class="scheme">only as {esc(c["scheme"])}</span>'
     if c.get("evidence_strength") == "inferred":
-        out += f'<span class="inferred" title="{esc(c["strength_reason"])}">† inferred</span>'
+        title = esc(c["strength_reason"])
+        if reason_href:
+            out += f'<a class="inferred" href="{esc(reason_href)}" title="{title}">† inferred: see reason</a>'
+        else:
+            out += f'<span class="inferred" title="{title}">† inferred</span>'
     return out
 
 
@@ -239,7 +260,8 @@ def provenance_line(ctx: Context) -> str:
 def legend() -> str:
     defs = {
         "supported": "shipped, with a primary source",
-        "experimental": "available but marked experimental or prototype",
+        "implemented-unstated": "code is present in the project, but upstream publishes no statement of its support level",
+        "experimental": "available, and upstream itself calls it experimental, a preview or not for production",
         "planned": "announced by the project, not shipped",
         "not-supported": "stated by the project as not available",
         "not-checked": "nobody has looked yet",
@@ -285,6 +307,14 @@ def hybrid_title(alg: str) -> str:
     return f' title="{esc(HYBRID_COLUMN_HELP)}"' if alg == "hybrid_kex" else ""
 
 
+def release_date(rel: dict, *, verb: bool = False) -> str:
+    """Official dates are shown plainly; a tag-commit date is labelled approximate."""
+    d = esc(rel["published_at"])
+    if rel.get("date_source") == "tag-commit":
+        return f"about {d} (approximate, from the tagged commit)" if verb else f"{d} (approximate)"
+    return f"published {d}" if verb else d
+
+
 def matrix(ctx: Context) -> str:
     head = "".join(
         f'<th scope="col"{hybrid_title(a)}>{esc(ALGORITHMS[a][0])}<br><span class="when">{esc(ALGORITHMS[a][1])}</span></th>'
@@ -298,10 +328,11 @@ def matrix(ctx: Context) -> str:
         for alg in ALGORITHMS:
             c = impl["algorithms"][alg]
             since = f'<span class="since">{since_text(c)}</span>' if since_text(c) else ""
-            cells.append(f"<td>{cell_badge(c)}{since}</td>")
+            href = f"/implementations/{impl['id']}/#reason-{alg}"
+            cells.append(f"<td>{cell_badge(c, href)}{since}</td>")
         latest = (
             f'<span class="when">latest {esc(rel["tag"])}'
-            + (f", {esc(rel['published_at'])}" if rel.get("published_at") else "")
+            + (f", {release_date(rel)}" if rel.get("published_at") else "")
             + "</span>"
             if rel
             else ""
@@ -412,6 +443,26 @@ def datatracker_flag(std: dict, d: dict | None) -> str:
     return ""
 
 
+def source_label(url: str) -> str:
+    u = urlparse(url)
+    last = u.path.rstrip("/").rsplit("/", 1)[-1]
+    return f"{u.hostname}: {last}" if last else str(u.hostname)
+
+
+def nist_statement(s: dict) -> str:
+    """What NIST itself says about an in-development item, where it says it, and what we searched."""
+    if not s.get("stated_status"):
+        return ""
+    page = f'<a href="{esc(s["stated_url"])}" rel="noopener">project page</a>'
+    out = f"NIST's {page} describes this as {esc(s['stated_status'])} (checked {esc(s['checked_on'])})"
+    if s.get("no_draft_found"):
+        links = ", ".join(
+            f'<a href="{esc(u)}" rel="noopener">{esc(source_label(u))}</a>' for u in s["checked_sources"]
+        )
+        out += f"; no draft publication was found in {links}"
+    return f'<span class="since">{out}. Quote: “{esc(s["stated_quote"])}”</span>'
+
+
 def standards_page(ctx: Context) -> str:
     def row(s: dict) -> str:
         d = ctx.drafts.get(s.get("datatracker_name", ""))
@@ -427,7 +478,7 @@ def standards_page(ctx: Context) -> str:
         status = std_badge(s["status"]) + (
             f' <span class="since">{esc(s["rfc"])}</span>' if s.get("rfc") else ""
         )
-        note = f'<span class="since">{esc(s["note"])}</span>' if s.get("note") else ""
+        note = nist_statement(s) + (f'<span class="since">{esc(s["note"])}</span>' if s.get("note") else "")
         date = esc(s["status_date"]) if s["status_date"] else DASH
         return (
             f'<tr id="{esc(s["id"])}"><th scope="row">{esc(s["title"])}{note}</th>'
@@ -446,14 +497,49 @@ def standards_page(ctx: Context) -> str:
         )
 
     nist = [s for s in ctx.standards if s["body"] == "NIST"]
-    ietf = sorted((s for s in ctx.standards if s["body"] == "IETF"), key=lambda s: (s["group"], s["id"]))
+    ietf = [s for s in ctx.standards if s["body"] == "IETF"]
+    active = sorted((s for s in ietf if s["status"] != "rfc-published"), key=lambda s: (s["group"], s["id"]))
+    published = sorted(
+        (s for s in ietf if s["status"] == "rfc-published"), key=lambda s: (s["group"], s["id"])
+    )
+
+    def active_row(s: dict) -> str:
+        d = ctx.drafts.get(s["datatracker_name"])
+        rev = f"-{esc(d['rev'])}" if d else "not collected yet"
+        updated = esc(d["updated_at"]) if d else DASH
+        live = ""
+        if d and d.get("iesg_state"):
+            live = f'<span class="since">Datatracker: {esc(d["iesg_state"])}</span>'
+        flag = datatracker_flag(s, d)
+        if flag:
+            live += f'<span class="since">{esc(flag)}</span>'
+        note = f'<span class="since">{esc(s["note"])}</span>' if s.get("note") else ""
+        return (
+            f'<tr id="{esc(s["id"])}"><th scope="row">{esc(s["title"])}{note}</th><td>{esc(s["group"].upper())}</td>'
+            f"<td>{std_badge(s['status'])}{live}</td><td>{rev}</td><td>{updated}</td>"
+            f'<td><a href="{esc(s["source_url"])}" rel="noopener">Source</a></td><td>{esc(s["verified_on"])}</td></tr>'
+        )
+
+    active_table = (
+        '<div class="scroll" role="region" aria-label="Active IETF drafts, scrollable" tabindex="0"><table>'
+        "<caption>Active IETF drafts in the TLS, LAMPS and PQUIP working groups, with the latest revision "
+        "and the date the Datatracker last updated each one.</caption><thead><tr>"
+        '<th scope="col">Draft</th><th scope="col">Group</th><th scope="col">Status</th>'
+        '<th scope="col">Revision</th><th scope="col">Last updated</th>'
+        '<th scope="col">Source</th><th scope="col">Last verified</th></tr></thead>'
+        f"<tbody>{''.join(active_row(s) for s in active)}</tbody></table></div>"
+        if active
+        else "<p>No active drafts are tracked.</p>"
+    )
     body = (
         "<h1>Standards status</h1>"
         '<p class="lede">Where the NIST post-quantum standards and the relevant IETF documents stand. '
         "IETF entries are compared with the Datatracker every day; a difference is flagged here but only a person "
         "changes the status shown.</p>"
         f"{provenance_line(ctx)}<h2>NIST</h2>{table('NIST standards and projects', nist)}"
-        f"<h2>IETF (TLS, LAMPS, PQUIP)</h2>{table('IETF documents in the TLS, LAMPS and PQUIP working groups', ietf)}"
+        f"<h2>IETF active drafts ({len(active)})</h2>{active_table}"
+        f'<details id="published-rfcs"><summary><h2>Published RFCs ({len(published)})</h2></summary>'
+        f"{table('IETF documents already published as RFCs', published)}</details>"
     )
     return page(
         ctx,
@@ -465,6 +551,15 @@ def standards_page(ctx: Context) -> str:
     )
 
 
+def tracking_note(ctx: Context) -> str:
+    if any(e["kind"] == "tracking-began" for e in ctx.entries):
+        return ""
+    return (
+        "<p>Confirmed status changes are listed from the day tracking began, so corrections made while the "
+        "tracker was being built do not appear here. Tracking has not begun yet.</p>"
+    )
+
+
 def changes_page(ctx: Context) -> str:
     body = (
         "<h1>Changes</h1>"
@@ -472,6 +567,7 @@ def changes_page(ctx: Context) -> str:
         "and the IETF Datatracker; they do not change any status. Status changes appear only after a person has "
         "reviewed the evidence.</p>"
         f'<p><a href="/feed.xml">Atom feed</a> · <a href="/data/changelog.json">changelog.json</a></p>'
+        f"{tracking_note(ctx)}"
         f"{changes_list(ctx, ctx.entries)}"
     )
     return page(
@@ -513,8 +609,14 @@ def note_cell(c: dict) -> str:
         parts.append(f"<strong>Inferred:</strong> {esc(c['strength_reason'])}")
     if c.get("scope") == "hybrid-only":
         parts.append(f"Hybrid only: available only as {esc(c['scheme'])}.")
+    if c["status"] == "planned":
+        basis = c["maintainer_basis"]
+        parts.append(
+            f"Maintainer statement dated {esc(c['statement_date'])}; maintainer status rests on "
+            f"{esc(MAINTAINER_BASIS_LABELS[basis['kind']])}: {esc(basis['detail'])}"
+        )
     if c.get("note"):
-        parts.append(esc(c["note"]))
+        parts.append(linkify(esc(c["note"])))
     return " ".join(parts)
 
 
@@ -524,12 +626,12 @@ def implementation_page(ctx: Context, impl: dict) -> str:
     for alg, (label, std) in ALGORITHMS.items():
         c = impl["algorithms"][alg]
         rows.append(
-            f'<tr><th scope="row"{hybrid_title(alg)}>{esc(label)}<span class="when">{esc(std)}</span></th>'
+            f'<tr id="{alg}"><th scope="row"{hybrid_title(alg)}>{esc(label)}<span class="when">{esc(std)}</span></th>'
             f"<td>{cell_badge(c)}</td><td>{since_cell(c)}</td><td>{evidence_cell(c)}</td>"
-            f"<td>{esc(c.get('verified_on') or c.get('checked_on') or '') or DASH}</td><td>{note_cell(c)}</td></tr>"
+            f'<td>{esc(c.get("verified_on") or c.get("checked_on") or "") or DASH}</td><td id="reason-{alg}">{note_cell(c)}</td></tr>'
         )
     if rel:
-        when = f", published {esc(rel['published_at'])}" if rel.get("published_at") else ""
+        when = f", {release_date(rel, verb=True)}" if rel.get("published_at") else ""
         latest = (
             f'<p>Latest release found: <a href="{esc(rel["url"])}" rel="noopener">{esc(rel["tag"])}</a>{when}. '
             "A newer release does not change any status below until a person reviews it.</p>"
@@ -549,7 +651,7 @@ def implementation_page(ctx: Context, impl: dict) -> str:
         f'<p class="lede">{esc(impl["kind"].capitalize())}. <a href="{esc(impl["homepage"])}" rel="noopener">Project site</a>{repo}</p>'
         f"{provenance_line(ctx)}<h2>Post-quantum support</h2>"
         f"<p>{esc(HYBRID_COLUMN_HELP)}</p>{legend()}"
-        '<div class="scroll" role="region" aria-label="Support statuses, scrollable" tabindex="0"><table>'
+        '<div class="scroll" role="region" aria-label="Support statuses, scrollable" tabindex="0"><table class="evidence">'
         "<caption>Support status per algorithm, with evidence.</caption><thead><tr>"
         '<th scope="col">Algorithm</th><th scope="col">Status</th><th scope="col">Since version</th>'
         '<th scope="col">Evidence</th><th scope="col">Last verified</th><th scope="col">Note</th></tr></thead>'
@@ -576,13 +678,14 @@ def methodology_page(ctx: Context) -> str:
 <h2>What each status means</h2>
 <dl>
 <dt>{badge("supported")}</dt><dd>A release of the project includes the feature and a primary source says so (release notes, official documentation, a changelog or an API reference). "Since version" is the first version we found stating it, which may not be the true first version; where no version is given the cell says "version not stated" and why. Source code alone never earns this status.</dd>
-<dt>{badge("experimental")}</dt><dd>Available, but the project itself calls it experimental, a prototype, or not for production. A header file or module with no statement of support level is shown here at most, marked inferred.</dd>
-<dt>{badge("planned")}</dt><dd>A maintainer has announced it but it has not shipped. An open request in an issue tracker is not enough.</dd>
+<dt>{badge("implemented-unstated")}</dt><dd>Code for it is present in the project (for example a public header), but upstream publishes no statement of its support level. This is what source code alone can earn; it is not a claim that the feature is ready for use.</dd>
+<dt>{badge("experimental")}</dt><dd>Available, and upstream itself uses the word "experimental" or an equivalent (preview, draft, unstable, not for production) for it. The note quotes the exact term; we never choose this label ourselves.</dd>
+<dt>{badge("planned")}</dt><dd>A maintainer has said it is planned, in a statement less than 12 months old whose target has not passed. The cell shows the statement date and why we treat the speaker as a maintainer. An open request in an issue tracker is not enough. After 12 months, or once the stated target passes, the build fails until a person re-confirms it or changes the cell to "no statement found"; the old statement stays linked in the note as history.</dd>
 <dt>{badge("not-supported")}</dt><dd>The project explicitly states that it is not available. We never infer this from silence.</dd>
 <dt>{badge("no-statement-found")}</dt><dd>We looked and found no primary source. The cell lists the date and every source searched. This is not a statement that the feature is missing: it may exist without being documented, or we may have looked in the wrong place.</dd>
 <dt>{badge("not-checked")}</dt><dd>Nobody has looked yet.</dd>
 <dt>{badge("supported", hybrid_only=True)}</dt><dd>The algorithm is available only inside the named hybrid scheme (for example ML-KEM inside X25519MLKEM768), not as a standalone primitive.</dd>
-<dt><span class="inferred">† inferred</span></dt><dd>Every supported or experimental cell is tagged with an evidence type (release notes, official docs, changelog, API reference, source code or issue tracker) and a strength. "Stated" means the upstream source says the feature is supported. "Inferred" means we concluded it from indirect evidence, such as a bug-fix title or a header file; the one-line reason is shown next to the cell.</dd>
+<dt><span class="inferred">† inferred</span></dt><dd>Every supported or experimental cell is tagged with an evidence type (release notes, official docs, changelog, API reference, source code, issue tracker or first-party deployment) and a strength. "Stated" means the upstream source says the feature is supported. "Inferred" means we concluded it from indirect evidence, such as a bug-fix title or a header file; the matrix marker links to the one-line reason on the project page. "First-party deployment" means the organisation that maintains the project says a product of its own ships the algorithm; we infer that this project provides it, and the reason names the product and version.</dd>
 </dl>
 <p>The matrix column "Hybrid key exchange" means TLS 1.3 groups such as X25519MLKEM768, except for OpenSSH, where it is SSH key exchange. Support for an algorithm inside a library does not mean a product built on that library has enabled it, and it does not mean FIPS validation.</p>
 <h2>Two kinds of data</h2>
@@ -590,12 +693,12 @@ def methodology_page(ctx: Context) -> str:
 <li><strong>Human-reviewed statuses.</strong> Written in <code>data/implementations.yaml</code> and <code>data/standards.yaml</code>. Each claim has an evidence URL and the date a person last read it.</li>
 <li><strong>Machine-collected facts.</strong> Latest release tag and date per project, and latest revision and state per IETF draft, collected daily into <code>data/snapshots/latest.json</code>.</li>
 </ul>
-<p>Automation detects change; a person confirms what it means. A new release or draft revision never changes a status by itself. It adds a changelog entry marked as automatically detected and opens a GitHub issue labelled <code>review-needed</code> with the link. Status changes appear in the changelog only after the YAML files change; they are found by comparing against the previously published build.</p>
+<p>Automation detects change; a person confirms what it means. A new release or draft revision never changes a status by itself. It adds a changelog entry marked as automatically detected and opens a GitHub issue labelled <code>review-needed</code> with the link. Status changes appear in the changelog only after the YAML files change; they are derived from the git history of those two files, so the whole log can be rebuilt from a clone of the repository and does not depend on the live site.</p>
 <h2>If collection fails</h2>
 <p>If any source errors or returns malformed data, the whole run is discarded, the last good snapshot stays, the workflow fails, and every page shows a "data stale since" notice. Partial data is never published.</p>
 <h2>Sources and licences</h2>
 <ul>
-<li>Release data: GitHub Releases and Git tags APIs, the NSS release notes, per project as shown on each project page. For projects without GitHub releases the date is the tagged commit's date, an approximation of the release date.</li>
+<li>Release data: GitHub Releases and Git tags APIs, the Go, Botan, OpenSSH, Bouncy Castle and NSS release pages, per project as shown on each project page. Release dates come from the project's own release page or announcement (Go, Botan, Bouncy Castle, OpenSSH and NSS) or its GitHub release. Only OpenJDK's official release pages refuse automated requests, so its date is the tagged commit's date and is shown as approximate.</li>
 <li>Draft data: the IETF Datatracker.</li>
 <li>Standards status: NIST CSRC pages and the Datatracker, linked per row.</li>
 <li>Evidence: each project's own release notes and documentation, linked per cell. We link to sources and quote only short factual phrases; their text stays under their own licences.</li>
@@ -606,14 +709,13 @@ def methodology_page(ctx: Context) -> str:
 <li>This is a snapshot of what we have read, not an audit. Twelve projects and four capabilities only.</li>
 <li>Several projects do not publish dated release notes for post-quantum features; where so, "since version" is left blank.</li>
 <li>Statuses describe the upstream project. Distributions, vendors and product builds may differ.</li>
-<li>NIST status pages can lag or be reorganised. FIPS 206 and the HQC standard are shown as in development because NIST pages describe them that way; check NIST for any draft.</li>
+<li>NIST status pages can lag or be reorganised. FIPS 206 and the HQC standard are shown with NIST's own wording, the page that says it, the date we checked and the NIST listings searched for a draft. Not finding a draft in those listings is not proof that none exists.</li>
 <li>Entries can be out of date between human reviews. The "Last verified" date on each row says when.</li>
 </ul>
 <h2>Data files</h2>
 <ul>
 <li><a href="/data/latest.json">/data/latest.json</a>: current statuses with latest releases and draft states. Schema versions are in <code>schema_version</code>.</li>
 <li><a href="/data/changelog.json">/data/changelog.json</a>: full changelog.</li>
-<li><a href="/data/statuses.json">/data/statuses.json</a>: compact status map used to detect status changes between builds.</li>
 <li><a href="/schemas/implementations.schema.json">JSON Schemas</a> for the input and output files are published under <code>/schemas/</code>.</li>
 </ul>
 <h2>Report an error</h2>
@@ -737,9 +839,6 @@ def build_site(ctx: Context, out_dir: Path, schema_dir: Path) -> list[str]:
     (data / "latest.json").write_text(dumps_json(latest_json(ctx)), encoding="utf-8")
     (data / "changelog.json").write_text(
         dumps_json({"schema_version": "1.0.0", "entries": ctx.entries}), encoding="utf-8"
-    )
-    (data / "statuses.json").write_text(
-        dumps_json(cl.statuses_of(ctx.implementations, ctx.standards)), encoding="utf-8"
     )
     schemas = out_dir / "schemas"
     schemas.mkdir()

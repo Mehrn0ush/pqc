@@ -104,7 +104,13 @@
               ],
               "properties": {
                 "type": {
-                  "const": "nss_release_notes"
+                  "enum": [
+                    "nss_release_notes",
+                    "go_release_history",
+                    "botan_news",
+                    "openssh_release_notes",
+                    "bc_release_notes"
+                  ]
                 },
                 "url": {
                   "$ref": "#/$defs/https"
@@ -150,6 +156,7 @@
           "enum": [
             "supported",
             "experimental",
+            "implemented-unstated",
             "planned",
             "not-supported",
             "not-checked",
@@ -184,7 +191,8 @@
             "changelog",
             "api-reference",
             "source-code",
-            "issue-tracker"
+            "issue-tracker",
+            "first-party-deployment"
           ]
         },
         "evidence_strength": {
@@ -218,6 +226,44 @@
         "note": {
           "type": "string",
           "maxLength": 400
+        },
+        "experimental_term": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "statement_date": {
+          "$ref": "#/$defs/date"
+        },
+        "statement_target_date": {
+          "$ref": "#/$defs/date"
+        },
+        "maintainer_basis": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "detail"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "maintainers-file",
+                "codeowners",
+                "org-membership",
+                "governance-page",
+                "commit-history"
+              ]
+            },
+            "detail": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            },
+            "url": {
+              "$ref": "#/$defs/https"
+            }
+          }
         }
       },
       "allOf": [
@@ -228,6 +274,7 @@
                 "enum": [
                   "supported",
                   "experimental",
+                  "implemented-unstated",
                   "planned",
                   "not-supported"
                 ]
@@ -279,6 +326,7 @@
             "properties": {
               "status": {
                 "enum": [
+                  "implemented-unstated",
                   "planned",
                   "not-supported",
                   "not-checked",
@@ -458,6 +506,63 @@
                 {
                   "required": [
                     "checked_sources"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "experimental"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "experimental_term"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "experimental_term"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "planned"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "statement_date",
+              "maintainer_basis"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "statement_date"
+                  ]
+                },
+                {
+                  "required": [
+                    "statement_target_date"
+                  ]
+                },
+                {
+                  "required": [
+                    "maintainer_basis"
                   ]
                 }
               ]
