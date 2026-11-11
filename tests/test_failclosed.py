@@ -36,6 +36,27 @@ STDS = [
 ]
 
 
+class OfficialPageFailClosedTests(unittest.TestCase):
+    """A changed or broken official release page fails the whole run and writes no snapshot."""
+
+    def test_broken_official_page_keeps_last_good_snapshot(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            url = "https://www.openssh.org/releasenotes.html"
+            ssh = impl(id="openssh", name="OpenSSH", source={"type": "openssh_release_notes", "url": url})
+            good = FakeFetcher({**routes(), url: fixture("openssh_releasenotes_excerpt.html")})
+            snapshot.run_collect(good, IMPLS + [ssh], STDS, d, NOW)
+            before = (d / "snapshots/latest.json").read_text()
+            bad = FakeFetcher({**routes(), url: "<html>maintenance</html>"})
+            with self.assertRaises(CollectionError):
+                snapshot.run_collect(bad, IMPLS + [ssh], STDS, d, NOW)
+            self.assertEqual((d / "snapshots/latest.json").read_text(), before)
+            self.assertEqual(
+                json.loads((d / "snapshots/latest.json").read_text())["releases"]["openssh"]["date_source"],
+                "official",
+            )
+
+
 class FailClosedTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

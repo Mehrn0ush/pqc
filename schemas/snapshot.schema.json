@@ -4,20 +4,55 @@
   "title": "Machine-collected snapshot",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "collected_at", "releases", "drafts"],
+  "required": [
+    "schema_version",
+    "collected_at",
+    "releases",
+    "drafts"
+  ],
   "properties": {
-    "schema_version": { "const": "1.0.0" },
-    "collected_at": { "type": "string", "format": "date-time", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z$" },
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "collected_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z$"
+    },
     "releases": {
       "type": "object",
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["tag", "published_at", "url"],
+        "required": [
+          "tag",
+          "published_at",
+          "date_source",
+          "url"
+        ],
         "properties": {
-          "tag": { "type": "string", "minLength": 1 },
-          "published_at": { "type": ["string", "null"], "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}" },
-          "url": { "type": "string", "pattern": "^https://[^\\s]+$" }
+          "tag": {
+            "type": "string",
+            "minLength": 1
+          },
+          "published_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}"
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^https://[^\\s]+$"
+          },
+          "date_source": {
+            "enum": [
+              "official",
+              "tag-commit"
+            ],
+            "description": "official: the project's release page or announcement. tag-commit: date of the tagged commit, approximate."
+          }
         }
       }
     },
@@ -26,14 +61,47 @@
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["rev", "state", "updated_at", "url"],
+        "required": [
+          "rev",
+          "state",
+          "updated_at",
+          "url"
+        ],
         "properties": {
-          "rev": { "type": "string", "minLength": 1 },
-          "state": { "enum": ["active", "rfc", "expired", "replaced", "withdrawn"] },
-          "iesg_state": { "type": ["string", "null"] },
-          "rfc": { "type": ["string", "null"], "pattern": "^RFC [0-9]+$" },
-          "updated_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}" },
-          "url": { "type": "string", "pattern": "^https://[^\\s]+$" }
+          "rev": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "enum": [
+              "active",
+              "rfc",
+              "expired",
+              "replaced",
+              "withdrawn"
+            ]
+          },
+          "iesg_state": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rfc": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^RFC [0-9]+$"
+          },
+          "updated_at": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}"
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^https://[^\\s]+$"
+          }
         }
       }
     }

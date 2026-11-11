@@ -104,7 +104,13 @@
               ],
               "properties": {
                 "type": {
-                  "const": "nss_release_notes"
+                  "enum": [
+                    "nss_release_notes",
+                    "go_release_history",
+                    "botan_news",
+                    "openssh_release_notes",
+                    "bc_release_notes"
+                  ]
                 },
                 "url": {
                   "$ref": "#/$defs/https"
