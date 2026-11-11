@@ -57,3 +57,21 @@ jobs:
           python -m pip install --no-deps -e .
       - name: Check evidence and source URLs
         run: pqc-tracker check-links
+
+  feed:
+    name: Atom feed validation
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0 # the build derives the changelog from git history
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+      - run: |
+          python -m pip install -r requirements-feed-check.lock
+          python -m pip install --no-deps -e .
+      - name: Build site
+        run: pqc-tracker build --out dist/site
+      - name: Validate feed.xml against the RELAX NG schema in RFC 4287
+        run: python .github/scripts/validate_atom.py dist/site/feed.xml

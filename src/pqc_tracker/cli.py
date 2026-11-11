@@ -10,10 +10,9 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import date
 from pathlib import Path
 
-from pqc_tracker import changelog, history, issues, linkcheck, site, snapshot
+from pqc_tracker import changelog, expiry, history, issues, linkcheck, site, snapshot
 from pqc_tracker.errors import TrackerError
 from pqc_tracker.http import HttpFetcher
 from pqc_tracker.util import atomic_write, dumps_json, iso_z, load_json, utcnow
@@ -26,7 +25,7 @@ def _data_dir(args) -> Path:
 
 def cmd_validate(args) -> int:
     d = validate_data_dir(_data_dir(args))
-    for w in semantic_warnings(d["implementations"], date.today()):
+    for w in semantic_warnings(d["implementations"], utcnow().date()):
         print(f"warning: {w}")
     print(
         f"ok: {len(d['implementations'])} implementations, {len(d['standards'])} standards, "
@@ -49,9 +48,9 @@ def cmd_issues(args) -> int:
     d = validate_data_dir(data_dir)
     entries = load_json(Path(args.entries))
     if args.dry_run:
-        actions = issues.preview(HttpFetcher(), args.repo, entries, d["implementations"])
+        actions = issues.preview(HttpFetcher(), args.repo, entries, d["implementations"], utcnow().date())
     else:
-        actions = issues.apply(HttpFetcher(), args.repo, entries, d["implementations"])
+        actions = issues.apply(HttpFetcher(), args.repo, entries, d["implementations"], utcnow().date())
     for a in actions:
         print(f"{'would ' if args.dry_run else ''}{a.kind}: {a.title}")
     return 0
@@ -98,7 +97,8 @@ def cmd_build(args) -> int:
     now = utcnow()
     confirmed = history.published_status_changes(Path(args.repo))
     entries = changelog.merge_for_publication(d["changelog"]["entries"], confirmed)
-    ctx = site.Context(d["implementations"], d["standards"], d["snapshot"], d["status"], entries, now)
+    shown = expiry.effective(d["implementations"], now.date())
+    ctx = site.Context(shown, d["standards"], d["snapshot"], d["status"], entries, now)
     pages = site.build_site(ctx, Path(args.out), ROOT / "schemas")
     print(
         f"built {len(pages)} pages into {args.out}; {len(confirmed)} confirmed status changes from git history; "

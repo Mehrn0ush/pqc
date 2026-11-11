@@ -27,10 +27,14 @@ Each claim has a `status`:
   the product and version.
 - `planned` needs `statement_date` (the date of the maintainer's statement), `maintainer_basis` (`kind`:
   `maintainers-file`, `codeowners`, `org-membership`, `governance-page` or `commit-history`, which is shown
-  as "commit history alone"; plus `detail` and optionally `url`) and optionally `statement_target_date`. The
-  validator fails when the statement is more than 365 days old or the target date has passed, so the cell must
-  be re-confirmed or changed to `no-statement-found` (with the old statement linked in the `note` as history).
-  `pqc-tracker validate` warns 30 days before a cell expires.
+  as "commit history alone"; plus `detail` and optionally `url`) and optionally `statement_target_date`. A
+  statement expires 365 days after `statement_date`, or the day after `statement_target_date`, whichever is
+  first. Expiry never fails a build and never rewrites this file: the build shows the cell as "No statement
+  found" with the text "previous 'planned' statement expired <date>" and a link to the old statement; Collect
+  records a machine `planned-expired` changelog entry dated on the expiry day; and review-needed issues are
+  opened per cell, one 30 days ahead and one on expiry, never repeated. `pqc-tracker validate` reports both as
+  warnings. A person then re-confirms the statement (new date and basis) or changes the cell to
+  `no-statement-found` and keeps the old statement in the `note` as history.
 - `scope` (`standalone` or `hybrid-only`) is required for ML-KEM, ML-DSA and SLH-DSA cells that have a support
   status, and `hybrid-only` needs `scheme` (for example `X25519MLKEM768`). The `hybrid_kex` cell has no scope.
 - `supported` and `experimental` need `since_version`, which may be `null` only with a `since_note` saying why.
@@ -73,7 +77,7 @@ Facts only. Replaced atomically; a failed run leaves it untouched.
 
 ### `data/changelog.json`  (`changelog.schema.json`)
 
-Append-only list of entries. `kind` is `release`, `draft-revision`, `draft-state` (machine-detected,
+Append-only list of entries. `kind` is `release`, `draft-revision`, `draft-state`, `planned-expired` (machine-detected,
 `detected_by: machine`), or `status-change` and `tracking-began` (`detected_by: human`, derived, never stored here). Entry ids are
 deterministic hashes, so repeating a run adds nothing.
 

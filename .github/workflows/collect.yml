@@ -74,7 +74,7 @@ jobs:
             echo "No data changes."
           else
             git commit -m "data: collect $(date -u +%Y-%m-%d)"
-            git push
+            .github/scripts/push-with-retry.sh main
           fi
 
       - name: Record failure and keep last good snapshot
@@ -88,5 +88,5 @@ jobs:
           git add data/collection-status.json
           if ! git diff --cached --quiet; then
             git commit -m "data: record failed collection $(date -u +%Y-%m-%d)"
-            git push
+            .github/scripts/push-with-retry.sh main
           fi
