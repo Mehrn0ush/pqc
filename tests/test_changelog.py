@@ -48,6 +48,19 @@ class MachineDiffTests(unittest.TestCase):
         (e,) = self.diff(snap(), snap(state="rfc", iesg="RFC Published", rfc="RFC 99"))
         self.assertEqual((e["kind"], e["to"]), ("draft-state", "RFC 99"))
 
+    def test_published_rfcs_never_generate_entries(self):
+        rfc = dict(state="rfc", iesg="RFC Published", rfc="RFC 99")
+        self.assertEqual(self.diff(snap(**rfc), snap(**rfc)), [])
+        # Datatracker keeps touching RFC records (revision, timestamps, IESG label): still nothing.
+        self.assertEqual(self.diff(snap(rev="05", **rfc), snap(rev="06", **{**rfc, "iesg": "Published"})), [])
+
+    def test_active_draft_revision_after_state_change_is_still_logged(self):
+        kinds = {
+            e["kind"]
+            for e in self.diff(snap(rev="05", iesg="IESG Evaluation"), snap(rev="06", iesg="RFC Ed Queue"))
+        }
+        self.assertEqual(kinds, {"draft-revision", "draft-state"})
+
     def test_iesg_state_change(self):
         (e,) = self.diff(snap(iesg="IESG Evaluation"), snap(iesg="RFC Ed Queue"))
         self.assertEqual((e["kind"], e["from"], e["to"]), ("draft-state", "IESG Evaluation", "RFC Ed Queue"))
@@ -120,6 +133,21 @@ class StatusDiffTests(unittest.TestCase):
         base = cl.statuses_of([impl()], [])
         after = [impl(algs={"mlkem": {"status": "not-checked", "note": "edited"}})]
         self.assertEqual(cl.diff_statuses(base, after, [], "2026-11-12"), [])
+
+    def test_an_added_document_that_is_already_an_rfc_is_not_news(self):
+        rfc = std(
+            id="r", body="IETF", status="rfc-published", group="tls", datatracker_name="draft-r", rfc="RFC 1"
+        )
+        draft = std(id="d", body="IETF", status="wg-draft", group="tls", datatracker_name="draft-d")
+        base = cl.statuses_of([], [])
+        got = cl.diff_statuses(base, [], [rfc, draft], "2026-11-12", ref="abc")
+        self.assertEqual([e["subject_id"] for e in got], ["d"])
+
+    def test_a_draft_becoming_an_rfc_is_a_status_change(self):
+        before = std(id="d", body="IETF", status="rfc-ed-queue", group="tls", datatracker_name="draft-d")
+        after = {**before, "status": "rfc-published", "rfc": "RFC 1"}
+        (e,) = cl.diff_statuses(cl.statuses_of([], [before]), [], [after], "2026-11-12")
+        self.assertEqual((e["from"], e["to"]), ("rfc-ed-queue", "rfc-published"))
 
     def test_standard_status_change(self):
         base = cl.statuses_of([], [std(status="draft")])

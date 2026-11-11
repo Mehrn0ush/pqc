@@ -93,6 +93,8 @@ def diff_snapshots(
         if old is None:
             continue
         sid = draft_ids.get(dname, dname)
+        if old["state"] == "rfc":
+            continue  # already published: only active drafts and a draft becoming an RFC are logged
         if old["rev"] != d["rev"] and d["state"] != "rfc":
             out.append(
                 _entry(
@@ -199,6 +201,8 @@ def diff_statuses(
     for std in standards:
         old = base_std.get(std["id"])
         if old is None:
+            if std["body"] == "IETF" and std["status"] == "rfc-published":
+                continue  # a document that is already an RFC is not news
             out.append(
                 _entry(
                     date=built_on,

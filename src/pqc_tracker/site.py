@@ -474,14 +474,49 @@ def standards_page(ctx: Context) -> str:
         )
 
     nist = [s for s in ctx.standards if s["body"] == "NIST"]
-    ietf = sorted((s for s in ctx.standards if s["body"] == "IETF"), key=lambda s: (s["group"], s["id"]))
+    ietf = [s for s in ctx.standards if s["body"] == "IETF"]
+    active = sorted((s for s in ietf if s["status"] != "rfc-published"), key=lambda s: (s["group"], s["id"]))
+    published = sorted(
+        (s for s in ietf if s["status"] == "rfc-published"), key=lambda s: (s["group"], s["id"])
+    )
+
+    def active_row(s: dict) -> str:
+        d = ctx.drafts.get(s["datatracker_name"])
+        rev = f"-{esc(d['rev'])}" if d else "not collected yet"
+        updated = esc(d["updated_at"]) if d else DASH
+        live = ""
+        if d and d.get("iesg_state"):
+            live = f'<span class="since">Datatracker: {esc(d["iesg_state"])}</span>'
+        flag = datatracker_flag(s, d)
+        if flag:
+            live += f'<span class="since">{esc(flag)}</span>'
+        note = f'<span class="since">{esc(s["note"])}</span>' if s.get("note") else ""
+        return (
+            f'<tr id="{esc(s["id"])}"><th scope="row">{esc(s["title"])}{note}</th><td>{esc(s["group"].upper())}</td>'
+            f"<td>{std_badge(s['status'])}{live}</td><td>{rev}</td><td>{updated}</td>"
+            f'<td><a href="{esc(s["source_url"])}" rel="noopener">Source</a></td><td>{esc(s["verified_on"])}</td></tr>'
+        )
+
+    active_table = (
+        '<div class="scroll" role="region" aria-label="Active IETF drafts, scrollable" tabindex="0"><table>'
+        "<caption>Active IETF drafts in the TLS, LAMPS and PQUIP working groups, with the latest revision "
+        "and the date the Datatracker last updated each one.</caption><thead><tr>"
+        '<th scope="col">Draft</th><th scope="col">Group</th><th scope="col">Status</th>'
+        '<th scope="col">Revision</th><th scope="col">Last updated</th>'
+        '<th scope="col">Source</th><th scope="col">Last verified</th></tr></thead>'
+        f"<tbody>{''.join(active_row(s) for s in active)}</tbody></table></div>"
+        if active
+        else "<p>No active drafts are tracked.</p>"
+    )
     body = (
         "<h1>Standards status</h1>"
         '<p class="lede">Where the NIST post-quantum standards and the relevant IETF documents stand. '
         "IETF entries are compared with the Datatracker every day; a difference is flagged here but only a person "
         "changes the status shown.</p>"
         f"{provenance_line(ctx)}<h2>NIST</h2>{table('NIST standards and projects', nist)}"
-        f"<h2>IETF (TLS, LAMPS, PQUIP)</h2>{table('IETF documents in the TLS, LAMPS and PQUIP working groups', ietf)}"
+        f"<h2>IETF active drafts ({len(active)})</h2>{active_table}"
+        f'<details id="published-rfcs"><summary><h2>Published RFCs ({len(published)})</h2></summary>'
+        f"{table('IETF documents already published as RFCs', published)}</details>"
     )
     return page(
         ctx,

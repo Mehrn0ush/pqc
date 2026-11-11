@@ -101,6 +101,15 @@ class DeriveTests(unittest.TestCase):
             )
         self.assertEqual(got[0]["url"], "https://example.org/a-mlkem")
 
+    def test_new_document_already_published_as_rfc_is_not_logged(self):
+        r = self.repo
+        r.commit(self.base, self.stds, "2026-01-10T12:00:00+00:00")
+        rfc = std(
+            id="r", body="IETF", status="rfc-published", group="tls", datatracker_name="draft-r", rfc="RFC 1"
+        )
+        r.commit(self.base, [*self.stds, rfc], "2026-01-11T12:00:00+00:00")
+        self.assertEqual(history.derive_status_changes(r.path), [])
+
     def test_baseline_commit_produces_nothing(self):
         self.repo.commit(self.base, self.stds, "2026-01-10T12:00:00+00:00")
         self.assertEqual(history.derive_status_changes(self.repo.path), [])
