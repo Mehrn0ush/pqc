@@ -96,3 +96,6 @@ ul.sources { margin: 0.25rem 0 0; padding-left: 1rem; font-size: 0.8rem; max-wid
 details > summary { cursor: pointer; }
 details > summary h2 { display: inline; }
 details > summary:focus-visible { outline: 2px solid var(--link, currentColor); outline-offset: 2px; }
+table.evidence td:nth-child(2) { min-width: 13rem; }
+table.evidence td:nth-child(4) { min-width: 11rem; }
+table.evidence td:nth-child(6) { min-width: 20rem; }

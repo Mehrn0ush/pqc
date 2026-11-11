@@ -651,7 +651,7 @@ def implementation_page(ctx: Context, impl: dict) -> str:
         f'<p class="lede">{esc(impl["kind"].capitalize())}. <a href="{esc(impl["homepage"])}" rel="noopener">Project site</a>{repo}</p>'
         f"{provenance_line(ctx)}<h2>Post-quantum support</h2>"
         f"<p>{esc(HYBRID_COLUMN_HELP)}</p>{legend()}"
-        '<div class="scroll" role="region" aria-label="Support statuses, scrollable" tabindex="0"><table>'
+        '<div class="scroll" role="region" aria-label="Support statuses, scrollable" tabindex="0"><table class="evidence">'
         "<caption>Support status per algorithm, with evidence.</caption><thead><tr>"
         '<th scope="col">Algorithm</th><th scope="col">Status</th><th scope="col">Since version</th>'
         '<th scope="col">Evidence</th><th scope="col">Last verified</th><th scope="col">Note</th></tr></thead>'
