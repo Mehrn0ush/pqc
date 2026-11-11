@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "silastron-pqc-tracker"
+version = "1.0.0"
+description = "Post-quantum cryptography readiness tracker for Silastron"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+authors = [{ name = "Silastron" }]
+dependencies = ["PyYAML>=6.0", "jsonschema>=4.21"]
+
+[project.optional-dependencies]
+dev = ["ruff"]
+
+[project.scripts]
+pqc-tracker = "pqc_tracker.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+pqc_tracker = ["static/*"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]  # inline HTML templates

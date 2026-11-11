@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pqc.silastron.com/schemas/implementations.schema.json",
+  "title": "Tracked implementations",
+  "type": "array",
+  "minItems": 1,
+  "items": { "$ref": "#/$defs/implementation" },
+  "$defs": {
+    "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "https": { "type": "string", "pattern": "^https://[^\\s]+$" },
+    "implementation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "kind", "homepage", "release_source", "algorithms"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "name": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["library", "runtime", "protocol tool"] },
+        "homepage": { "$ref": "#/$defs/https" },
+        "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+        "release_source": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "repo"],
+              "properties": {
+                "type": { "const": "github_release" },
+                "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "repo", "prefix", "tag_regex"],
+              "properties": {
+                "type": { "const": "github_tags" },
+                "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+                "prefix": { "type": "string" },
+                "tag_regex": { "type": "string", "minLength": 1 }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "url"],
+              "properties": {
+                "type": { "const": "nss_release_notes" },
+                "url": { "$ref": "#/$defs/https" }
+              }
+            }
+          ]
+        },
+        "algorithms": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mlkem", "mldsa", "slhdsa", "hybrid_kex"],
+          "properties": {
+            "mlkem": { "$ref": "#/$defs/claim" },
+            "mldsa": { "$ref": "#/$defs/claim" },
+            "slhdsa": { "$ref": "#/$defs/claim" },
+            "hybrid_kex": { "$ref": "#/$defs/claim" }
+          }
+        }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "verified_on"],
+      "properties": {
+        "status": { "enum": ["supported", "experimental", "planned", "not-supported", "unverified"] },
+        "since_version": { "type": ["string", "null"] },
+        "evidence_url": { "$ref": "#/$defs/https" },
+        "verified_on": { "$ref": "#/$defs/date" },
+        "note": { "type": "string", "maxLength": 400 }
+      },
+      "if": { "properties": { "status": { "const": "unverified" } } },
+      "then": {
+        "properties": { "since_version": { "const": null } }
+      },
+      "else": { "required": ["evidence_url"] }
+    }
+  }
+}

@@ -1,0 +1,415 @@
+# One entry per tracked project. Every claim other than 'unverified' needs evidence_url and verified_on.
+# See CONTRIBUTING.md for the evidence rule.
+- id: openssl
+  name: OpenSSL
+  kind: library
+  homepage: https://openssl-library.org/
+  repo: openssl/openssl
+  release_source:
+    type: github_release
+    repo: openssl/openssl
+  algorithms:
+    mlkem:
+      status: supported
+      since_version: 3.5.0
+      evidence_url: https://github.com/openssl/openssl/blob/master/CHANGES.md
+      verified_on: '2026-11-11'
+      note: Listed under 'Changes between 3.4 and 3.5.0'.
+    mldsa:
+      status: supported
+      since_version: 3.5.0
+      evidence_url: https://github.com/openssl/openssl/blob/master/CHANGES.md
+      verified_on: '2026-11-11'
+      note: Listed under 'Changes between 3.4 and 3.5.0'; ML-DSA is in the default TLS signature algorithms.
+    slhdsa:
+      status: supported
+      since_version: 3.5.0
+      evidence_url: https://github.com/openssl/openssl/blob/master/CHANGES.md
+      verified_on: '2026-11-11'
+      note: Listed under 'Changes between 3.4 and 3.5.0'.
+    hybrid_kex:
+      status: supported
+      since_version: 3.5.0
+      evidence_url: https://github.com/openssl/openssl/blob/master/CHANGES.md
+      verified_on: '2026-11-11'
+      note: X25519MLKEM768, SecP256r1MLKEM768 and SecP384r1MLKEM1024 TLS groups; X25519MLKEM768 first
+        in the default group list.
+- id: boringssl
+  name: BoringSSL
+  kind: library
+  homepage: https://boringssl.googlesource.com/boringssl/
+  repo: google/boringssl
+  release_source:
+    type: github_release
+    repo: google/boringssl
+  algorithms:
+    mlkem:
+      status: supported
+      since_version: null
+      evidence_url: https://github.com/google/boringssl/blob/main/include/openssl/mlkem.h
+      verified_on: '2026-11-11'
+      note: Public header cites FIPS 203. BoringSSL release notes were not found, so no first version
+        is recorded.
+    mldsa:
+      status: supported
+      since_version: null
+      evidence_url: https://github.com/google/boringssl/blob/main/include/openssl/mldsa.h
+      verified_on: '2026-11-11'
+      note: Public header cites FIPS 204. BoringSSL release notes were not found, so no first version
+        is recorded.
+    slhdsa:
+      status: unverified
+      evidence_url: https://github.com/google/boringssl/blob/main/include/openssl/slhdsa.h
+      verified_on: '2026-11-11'
+      note: slhdsa.h declares SLH-DSA parameter sets but does not name FIPS 205 or a support level.
+    hybrid_kex:
+      status: supported
+      since_version: null
+      evidence_url: https://github.com/google/boringssl/blob/main/include/openssl/ssl.h
+      verified_on: '2026-11-11'
+      note: ssl.h defines SSL_GROUP_X25519_MLKEM768 and SSL_GROUP_MLKEM1024.
+- id: aws-lc
+  name: AWS-LC
+  kind: library
+  homepage: https://github.com/aws/aws-lc
+  repo: aws/aws-lc
+  release_source:
+    type: github_release
+    repo: aws/aws-lc
+  algorithms:
+    mlkem:
+      status: supported
+      since_version: 1.35.0
+      evidence_url: https://github.com/aws/aws-lc/releases/tag/v1.35.0
+      verified_on: '2026-11-11'
+      note: 'Release note: ''ML-KEM-IPD to ML-KEM as defined in FIPS 203''.'
+    mldsa:
+      status: supported
+      since_version: null
+      evidence_url: https://github.com/aws/aws-lc/blob/main/crypto/fipsmodule/PQREADME.md
+      verified_on: '2026-11-11'
+      note: 'PQREADME lists ML-DSA as supported. Release v1.43.0 notes: ''Move ML-DSA to FIPSMODULE''.'
+    slhdsa:
+      status: unverified
+      evidence_url: https://github.com/aws/aws-lc/blob/main/crypto/fipsmodule/PQREADME.md
+      verified_on: '2026-11-11'
+      note: PQREADME lists only ML-KEM and ML-DSA; no SLH-DSA statement found in release notes.
+    hybrid_kex:
+      status: supported
+      since_version: 1.35.1
+      evidence_url: https://github.com/aws/aws-lc/releases/tag/v1.35.1
+      verified_on: '2026-11-11'
+      note: 'Release note: ''Add MLKEM768 Hybrid Groups to libssl''. PQREADME lists X25519MLKEM768, SecP256r1MLKEM768,
+        SecP384r1MLKEM1024.'
+- id: wolfssl
+  name: wolfSSL
+  kind: library
+  homepage: https://www.wolfssl.com/
+  repo: wolfSSL/wolfssl
+  release_source:
+    type: github_release
+    repo: wolfSSL/wolfssl
+  algorithms:
+    mlkem:
+      status: supported
+      since_version: 5.7.4
+      evidence_url: https://github.com/wolfSSL/wolfssl/releases/tag/v5.7.4-stable
+      verified_on: '2026-11-11'
+      note: 'Release note: ''Dilithium, Kyber: Update to final specification''.'
+    mldsa:
+      status: supported
+      since_version: 5.7.4
+      evidence_url: https://github.com/wolfSSL/wolfssl/releases/tag/v5.7.4-stable
+      verified_on: '2026-11-11'
+      note: 'Release note: ''Dilithium, Kyber: Update to final specification''.'
+    slhdsa:
+      status: supported
+      since_version: 5.9.0
+      evidence_url: https://github.com/wolfSSL/wolfssl/releases/tag/v5.9.0-stable
+      verified_on: '2026-11-11'
+      note: 'Release note: ''FIPS 205, SLH-DSA implementation''.'
+    hybrid_kex:
+      status: supported
+      since_version: 5.8.0
+      evidence_url: https://github.com/wolfSSL/wolfssl/releases/tag/v5.8.0-stable
+      verified_on: '2026-11-11'
+      note: 'Release note: ''Add more PQC hybrid key exchange algorithms such as support for combinations
+        with X25519 and X448''.'
+- id: liboqs
+  name: liboqs
+  kind: library
+  homepage: https://openquantumsafe.org/
+  repo: open-quantum-safe/liboqs
+  release_source:
+    type: github_release
+    repo: open-quantum-safe/liboqs
+  algorithms:
+    mlkem:
+      status: supported
+      since_version: 0.11.0
+      evidence_url: https://github.com/open-quantum-safe/liboqs/releases/tag/0.11.0
+      verified_on: '2026-11-11'
+      note: 'Release note: ML-KEM updated to the final FIPS 203 version. The project says the library
+        is for research and prototyping, not production use.'
+    mldsa:
+      status: supported
+      since_version: 0.12.0
+      evidence_url: https://github.com/open-quantum-safe/liboqs/releases/tag/0.12.0
+      verified_on: '2026-11-11'
+      note: 'Release note: ML-DSA updated to the final FIPS 204 version. The project says the library
+        is for research and prototyping, not production use.'
+    slhdsa:
+      status: supported
+      since_version: 0.15.0
+      evidence_url: https://github.com/open-quantum-safe/liboqs/releases/tag/0.15.0
+      verified_on: '2026-11-11'
+      note: 'Release note: ''Integrated SLH-DSA implementation''. Release 0.16.0 removes SPHINCS+.'
+    hybrid_kex:
+      status: experimental
+      since_version: null
+      evidence_url: https://github.com/open-quantum-safe/liboqs/releases/tag/0.16.0
+      verified_on: '2026-11-11'
+      note: liboqs is a primitives library. Hybrid TLS comes from the separate oqs-provider, which the
+        release notes call a prototype.
+- id: botan
+  name: Botan
+  kind: library
+  homepage: https://botan.randombit.net/
+  repo: randombit/botan
+  release_source:
+    type: github_tags
+    repo: randombit/botan
+    prefix: '3.'
+    tag_regex: ^(\d+)\.(\d+)\.(\d+)$
+  algorithms:
+    mlkem:
+      status: supported
+      since_version: 3.6.0
+      evidence_url: https://github.com/randombit/botan/blob/master/news.rst
+      verified_on: '2026-11-11'
+      note: 'news.rst, Version 3.6.0 (2024-10-21): ''Add support for FIPS 203 ML-KEM''.'
+    mldsa:
+      status: supported
+      since_version: 3.6.0
+      evidence_url: https://github.com/randombit/botan/blob/master/news.rst
+      verified_on: '2026-11-11'
+      note: 'news.rst, Version 3.6.0 (2024-10-21): ''Add support for FIPS 204 ML-DSA''.'
+    slhdsa:
+      status: supported
+      since_version: 3.6.0
+      evidence_url: https://github.com/randombit/botan/blob/master/news.rst
+      verified_on: '2026-11-11'
+      note: 'news.rst, Version 3.6.0 (2024-10-21): ''Add support for FIPS 205 SLH-DSA''.'
+    hybrid_kex:
+      status: supported
+      since_version: 3.7.0
+      evidence_url: https://github.com/randombit/botan/blob/master/news.rst
+      verified_on: '2026-11-11'
+      note: 'news.rst, Version 3.7.0 (2025-02-04): hybrid x25519/ML-KEM-768 enabled by default in TLS.
+        Earlier availability was not checked.'
+- id: bouncycastle
+  name: Bouncy Castle (Java)
+  kind: library
+  homepage: https://www.bouncycastle.org/
+  repo: bcgit/bc-java
+  release_source:
+    type: github_tags
+    repo: bcgit/bc-java
+    prefix: r1rv
+    tag_regex: ^r1rv(\d+)$
+  algorithms:
+    mlkem:
+      status: supported
+      since_version: null
+      evidence_url: https://github.com/bcgit/bc-java/blob/main/docs/specifications.md
+      verified_on: '2026-11-11'
+      note: specifications.md lists ML-KEM (FIPS 203) in the BC provider. First version not recorded.
+    mldsa:
+      status: supported
+      since_version: null
+      evidence_url: https://github.com/bcgit/bc-java/blob/main/docs/specifications.md
+      verified_on: '2026-11-11'
+      note: specifications.md lists ML-DSA (FIPS 204) in the BC provider. First version not recorded.
+    slhdsa:
+      status: supported
+      since_version: null
+      evidence_url: https://github.com/bcgit/bc-java/blob/main/docs/specifications.md
+      verified_on: '2026-11-11'
+      note: specifications.md lists SLH-DSA (FIPS 205) in the BC provider. First version not recorded.
+    hybrid_kex:
+      status: supported
+      since_version: null
+      evidence_url: https://github.com/bcgit/bc-java/blob/main/docs/specifications.md
+      verified_on: '2026-11-11'
+      note: 'specifications.md: BCJSSE offers X25519MLKEM768 first by default in TLS 1.3. First version
+        not recorded.'
+- id: go
+  name: Go standard library
+  kind: runtime
+  homepage: https://go.dev/
+  repo: golang/go
+  release_source:
+    type: github_tags
+    repo: golang/go
+    prefix: go1.
+    tag_regex: ^go(\d+)\.(\d+)(?:\.(\d+))?$
+  algorithms:
+    mlkem:
+      status: supported
+      since_version: '1.24'
+      evidence_url: https://go.dev/doc/go1.24
+      verified_on: '2026-11-11'
+      note: 'Go 1.24 notes: new crypto/mlkem package (ML-KEM-768 and ML-KEM-1024).'
+    mldsa:
+      status: supported
+      since_version: '1.27'
+      evidence_url: https://go.dev/doc/go1.27
+      verified_on: '2026-11-11'
+      note: 'Go 1.27 notes: new crypto/mldsa package implementing FIPS 204; ML-DSA in crypto/x509 and
+        TLS 1.3.'
+    slhdsa:
+      status: unverified
+      evidence_url: https://go.dev/doc/go1.27
+      verified_on: '2026-11-11'
+      note: SLH-DSA is not mentioned in the Go 1.24, 1.26 or 1.27 release notes read; absence there is
+        not proof of non-support.
+    hybrid_kex:
+      status: supported
+      since_version: '1.24'
+      evidence_url: https://go.dev/doc/go1.24
+      verified_on: '2026-11-11'
+      note: 'Go 1.24 notes: X25519MLKEM768 in crypto/tls, enabled by default. Go 1.26 notes add SecP256r1MLKEM768
+        and SecP384r1MLKEM1024 by default.'
+- id: openjdk
+  name: OpenJDK
+  kind: runtime
+  homepage: https://openjdk.org/
+  repo: openjdk/jdk
+  release_source:
+    type: github_tags
+    repo: openjdk/jdk
+    prefix: jdk-
+    tag_regex: ^jdk-(\d+)-ga$
+  algorithms:
+    mlkem:
+      status: supported
+      since_version: '24'
+      evidence_url: https://openjdk.org/jeps/496
+      verified_on: '2026-11-11'
+      note: JEP 496, status Closed / Delivered, release 24.
+    mldsa:
+      status: supported
+      since_version: '24'
+      evidence_url: https://openjdk.org/jeps/497
+      verified_on: '2026-11-11'
+      note: JEP 497, status Closed / Delivered, release 24.
+    slhdsa:
+      status: unverified
+      verified_on: '2026-11-11'
+      note: No JEP or release note for SLH-DSA in the JDK was found in this review.
+    hybrid_kex:
+      status: supported
+      since_version: '27'
+      evidence_url: https://openjdk.org/jeps/527
+      verified_on: '2026-11-11'
+      note: JEP 527, status Closed / Delivered, release 27.
+- id: rustls
+  name: rustls
+  kind: library
+  homepage: https://rustls.dev/
+  repo: rustls/rustls
+  release_source:
+    type: github_release
+    repo: rustls/rustls
+  algorithms:
+    mlkem:
+      status: supported
+      since_version: 0.23.22
+      evidence_url: https://github.com/rustls/rustls/releases/tag/v/0.23.22
+      verified_on: '2026-11-11'
+      note: Offered as the ML-KEM half of X25519MLKEM768 with the aws-lc-rs provider; no standalone KEM
+        API was checked.
+    mldsa:
+      status: supported
+      since_version: 0.23.44
+      evidence_url: https://github.com/rustls/rustls/releases/tag/v/0.23.44
+      verified_on: '2026-11-11'
+      note: 'Release note: ML-DSA certificate support enabled by default in the aws-lc-rs provider; the
+        note says it is not for the public web PKI.'
+    slhdsa:
+      status: unverified
+      verified_on: '2026-11-11'
+      note: No SLH-DSA statement found in rustls release notes.
+    hybrid_kex:
+      status: supported
+      since_version: 0.23.22
+      evidence_url: https://github.com/rustls/rustls/releases/tag/v/0.23.22
+      verified_on: '2026-11-11'
+      note: 'Release note: X25519MLKEM768 with the aws-lc-rs provider, at low negotiation priority. Preferred
+        by default from 0.23.27.'
+- id: nss
+  name: NSS
+  kind: library
+  homepage: https://firefox-source-docs.mozilla.org/security/nss/
+  repo: nss-dev/nss
+  release_source:
+    type: nss_release_notes
+    url: https://firefox-source-docs.mozilla.org/security/nss/releases/index.html
+  algorithms:
+    mlkem:
+      status: supported
+      since_version: '3.105'
+      evidence_url: https://firefox-source-docs.mozilla.org/security/nss/releases/nss_3_105.html
+      verified_on: '2026-11-11'
+      note: 'NSS 3.105 notes: ''support for ML-KEM-768 in softoken and pk11wrap''.'
+    mldsa:
+      status: unverified
+      evidence_url: https://firefox-source-docs.mozilla.org/security/nss/releases/nss_3_128.html
+      verified_on: '2026-11-11'
+      note: Release notes list ML-DSA bugs from NSS 3.116 on but do not state a support level.
+    slhdsa:
+      status: unverified
+      verified_on: '2026-11-11'
+      note: No SLH-DSA statement found in the NSS release notes read.
+    hybrid_kex:
+      status: supported
+      since_version: '3.105'
+      evidence_url: https://firefox-source-docs.mozilla.org/security/nss/releases/nss_3_105.html
+      verified_on: '2026-11-11'
+      note: 'NSS 3.105 notes: ''libssl support for mlkem768x25519''. NSS 3.118 notes: ''Make mlkem768x25519
+        the default''.'
+- id: openssh
+  name: OpenSSH
+  kind: protocol tool
+  homepage: https://www.openssh.org/
+  repo: openssh/openssh-portable
+  release_source:
+    type: github_tags
+    repo: openssh/openssh-portable
+    prefix: V_
+    tag_regex: ^V_(\d+)_(\d+)_P(\d+)$
+  algorithms:
+    mlkem:
+      status: supported
+      since_version: '9.9'
+      evidence_url: https://www.openssh.org/releasenotes.html
+      verified_on: '2026-11-11'
+      note: OpenSSH 9.9 added mlkem768x25519-sha256 (ML-KEM with X25519). ML-KEM is used only inside this
+        hybrid.
+    mldsa:
+      status: supported
+      since_version: '10.6'
+      evidence_url: https://www.openssh.org/releasenotes.html
+      verified_on: '2026-11-11'
+      note: OpenSSH 10.6 enabled ssh-mldsa44-ed25519, a hybrid ML-DSA/Ed25519 scheme from an IETF draft;
+        experimental since 10.4. No standalone ML-DSA.
+    slhdsa:
+      status: unverified
+      verified_on: '2026-11-11'
+      note: No SLH-DSA statement found in the OpenSSH release notes read.
+    hybrid_kex:
+      status: supported
+      since_version: '9.9'
+      evidence_url: https://www.openssh.org/releasenotes.html
+      verified_on: '2026-11-11'
+      note: SSH key exchange mlkem768x25519-sha256, default since OpenSSH 10.0. This is SSH, not TLS.

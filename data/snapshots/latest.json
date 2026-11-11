@@ -1,0 +1,228 @@
+{
+  "collected_at": "2026-11-11T07:42:48Z",
+  "drafts": {
+    "draft-ietf-lamps-cms-composite-kem": {
+      "iesg_state": "RFC Ed Queue",
+      "rev": "04",
+      "rfc": null,
+      "state": "active",
+      "updated_at": "2026-10-16",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-lamps-cms-composite-kem/"
+    },
+    "draft-ietf-lamps-cms-composite-sigs": {
+      "iesg_state": "RFC Published",
+      "rev": "05",
+      "rfc": "RFC 10082",
+      "state": "rfc",
+      "updated_at": "2026-11-07",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-lamps-cms-composite-sigs/"
+    },
+    "draft-ietf-lamps-cms-kyber": {
+      "iesg_state": "RFC Published",
+      "rev": "13",
+      "rfc": "RFC 9936",
+      "state": "rfc",
+      "updated_at": "2026-03-06",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-lamps-cms-kyber/"
+    },
+    "draft-ietf-lamps-cms-ml-dsa": {
+      "iesg_state": "RFC Published",
+      "rev": "07",
+      "rfc": "RFC 9882",
+      "state": "rfc",
+      "updated_at": "2025-10-30",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-lamps-cms-ml-dsa/"
+    },
+    "draft-ietf-lamps-cms-sphincs-plus": {
+      "iesg_state": "RFC Published",
+      "rev": "19",
+      "rfc": "RFC 9814",
+      "state": "rfc",
+      "updated_at": "2025-07-19",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-lamps-cms-sphincs-plus/"
+    },
+    "draft-ietf-lamps-dilithium-certificates": {
+      "iesg_state": "RFC Published",
+      "rev": "13",
+      "rfc": "RFC 9881",
+      "state": "rfc",
+      "updated_at": "2025-10-30",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-lamps-dilithium-certificates/"
+    },
+    "draft-ietf-lamps-kyber-certificates": {
+      "iesg_state": "RFC Published",
+      "rev": "11",
+      "rfc": "RFC 9935",
+      "state": "rfc",
+      "updated_at": "2026-03-06",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-lamps-kyber-certificates/"
+    },
+    "draft-ietf-lamps-pq-composite-kem": {
+      "iesg_state": "RFC Ed Queue",
+      "rev": "23",
+      "rfc": null,
+      "state": "active",
+      "updated_at": "2026-10-28",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-lamps-pq-composite-kem/"
+    },
+    "draft-ietf-lamps-pq-composite-sigs": {
+      "iesg_state": "RFC Published",
+      "rev": "19",
+      "rfc": "RFC 10073",
+      "state": "rfc",
+      "updated_at": "2026-11-07",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-lamps-pq-composite-sigs/"
+    },
+    "draft-ietf-lamps-x509-slhdsa": {
+      "iesg_state": "RFC Published",
+      "rev": "09",
+      "rfc": "RFC 9909",
+      "state": "rfc",
+      "updated_at": "2025-12-22",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-lamps-x509-slhdsa/"
+    },
+    "draft-ietf-pquip-hbs-state": {
+      "iesg_state": "RFC Published",
+      "rev": "04",
+      "rfc": "RFC 10033",
+      "state": "rfc",
+      "updated_at": "2026-09-15",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-pquip-hbs-state/"
+    },
+    "draft-ietf-pquip-hybrid-signature-spectrums": {
+      "iesg_state": "RFC Published",
+      "rev": "07",
+      "rfc": "RFC 9955",
+      "state": "rfc",
+      "updated_at": "2026-07-17",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-pquip-hybrid-signature-spectrums/"
+    },
+    "draft-ietf-pquip-pqc-engineers": {
+      "iesg_state": "RFC Published",
+      "rev": "14",
+      "rfc": "RFC 9958",
+      "state": "rfc",
+      "updated_at": "2026-06-18",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-pquip-pqc-engineers/"
+    },
+    "draft-ietf-pquip-pqc-hsm-constrained": {
+      "iesg_state": "IESG Evaluation",
+      "rev": "11",
+      "rfc": null,
+      "state": "active",
+      "updated_at": "2026-11-05",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-pquip-pqc-hsm-constrained/"
+    },
+    "draft-ietf-pquip-pqt-hybrid-terminology": {
+      "iesg_state": "RFC Published",
+      "rev": "06",
+      "rfc": "RFC 9794",
+      "state": "rfc",
+      "updated_at": "2025-06-13",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-pquip-pqt-hybrid-terminology/"
+    },
+    "draft-ietf-tls-composite-mldsa": {
+      "iesg_state": "I-D Exists",
+      "rev": "00",
+      "rfc": null,
+      "state": "active",
+      "updated_at": "2026-11-06",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-tls-composite-mldsa/"
+    },
+    "draft-ietf-tls-ecdhe-mlkem": {
+      "iesg_state": "RFC Published",
+      "rev": "05",
+      "rfc": "RFC 10024",
+      "state": "rfc",
+      "updated_at": "2026-08-10",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-tls-ecdhe-mlkem/"
+    },
+    "draft-ietf-tls-hybrid-design": {
+      "iesg_state": "RFC Published",
+      "rev": "16",
+      "rfc": "RFC 9954",
+      "state": "rfc",
+      "updated_at": "2026-07-15",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-tls-hybrid-design/"
+    },
+    "draft-ietf-tls-mldsa": {
+      "iesg_state": "RFC Ed Queue",
+      "rev": "06",
+      "rfc": null,
+      "state": "active",
+      "updated_at": "2026-10-12",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-tls-mldsa/"
+    },
+    "draft-ietf-tls-mlkem": {
+      "iesg_state": "RFC Ed Queue",
+      "rev": "11",
+      "rfc": null,
+      "state": "active",
+      "updated_at": "2026-10-12",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-tls-mlkem/"
+    }
+  },
+  "releases": {
+    "aws-lc": {
+      "published_at": "2026-11-10",
+      "tag": "v5.14.0",
+      "url": "https://github.com/aws/aws-lc/releases/tag/v5.14.0"
+    },
+    "boringssl": {
+      "published_at": "2026-11-05",
+      "tag": "0.20261105.0",
+      "url": "https://github.com/google/boringssl/releases/tag/0.20261105.0"
+    },
+    "botan": {
+      "published_at": "2026-11-06",
+      "tag": "3.14.1",
+      "url": "https://github.com/randombit/botan/tree/3.14.1"
+    },
+    "bouncycastle": {
+      "published_at": "2026-09-11",
+      "tag": "r1rv86",
+      "url": "https://github.com/bcgit/bc-java/tree/r1rv86"
+    },
+    "go": {
+      "published_at": "2026-11-10",
+      "tag": "go1.27.4",
+      "url": "https://github.com/golang/go/tree/go1.27.4"
+    },
+    "liboqs": {
+      "published_at": "2026-07-09",
+      "tag": "0.16.0",
+      "url": "https://github.com/open-quantum-safe/liboqs/releases/tag/0.16.0"
+    },
+    "nss": {
+      "published_at": null,
+      "tag": "NSS 3.133",
+      "url": "https://firefox-source-docs.mozilla.org/security/nss/releases/nss_3_133.html"
+    },
+    "openjdk": {
+      "published_at": "2026-08-19",
+      "tag": "jdk-27-ga",
+      "url": "https://github.com/openjdk/jdk/tree/jdk-27-ga"
+    },
+    "openssh": {
+      "published_at": "2026-11-04",
+      "tag": "V_10_6_P2",
+      "url": "https://github.com/openssh/openssh-portable/tree/V_10_6_P2"
+    },
+    "openssl": {
+      "published_at": "2026-10-23",
+      "tag": "openssl-4.1.0",
+      "url": "https://github.com/openssl/openssl/releases/tag/openssl-4.1.0"
+    },
+    "rustls": {
+      "published_at": "2026-10-14",
+      "tag": "v/0.23.46",
+      "url": "https://github.com/rustls/rustls/releases/tag/v/0.23.46"
+    },
+    "wolfssl": {
+      "published_at": "2026-09-27",
+      "tag": "v5.9.4-stable",
+      "url": "https://github.com/wolfSSL/wolfssl/releases/tag/v5.9.4-stable"
+    }
+  },
+  "schema_version": "1.0.0"
+}

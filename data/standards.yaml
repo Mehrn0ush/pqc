@@ -1,0 +1,251 @@
+# One entry per standard or draft. The collector compares IETF entries with the Datatracker but never edits this file.
+- id: fips-203
+  title: 'FIPS 203: Module-Lattice-Based Key-Encapsulation Mechanism Standard (ML-KEM)'
+  body: NIST
+  status: final
+  status_date: '2024-08-13'
+  source_url: https://csrc.nist.gov/pubs/fips/203/final
+  verified_on: '2026-11-11'
+  note: NIST page notes an issue to be corrected in a future revision (planning note dated 2025-11-17).
+- id: fips-204
+  title: 'FIPS 204: Module-Lattice-Based Digital Signature Standard (ML-DSA)'
+  body: NIST
+  status: final
+  status_date: '2024-08-13'
+  source_url: https://csrc.nist.gov/pubs/fips/204/final
+  verified_on: '2026-11-11'
+  note: NIST page notes minor errata to be corrected in a future update (planning note dated 2026-07-31).
+- id: fips-205
+  title: 'FIPS 205: Stateless Hash-Based Digital Signature Standard (SLH-DSA)'
+  body: NIST
+  status: final
+  status_date: '2024-08-13'
+  source_url: https://csrc.nist.gov/pubs/fips/205/final
+  verified_on: '2026-11-11'
+- id: fips-206
+  title: 'FIPS 206: FN-DSA (Falcon)'
+  body: NIST
+  status: in-development
+  status_date: null
+  source_url: https://csrc.nist.gov/projects/post-quantum-cryptography
+  verified_on: '2026-11-11'
+  note: NIST's project page says Falcon was selected for ongoing standardization. No FIPS 206 draft publication
+    page was found when checked.
+- id: hqc
+  title: HQC key-encapsulation standard (number not assigned in the sources read)
+  body: NIST
+  status: in-development
+  status_date: '2025-03-11'
+  source_url: https://csrc.nist.gov/pubs/ir/8545/final
+  verified_on: '2026-11-11'
+  note: NIST IR 8545 says NIST will develop a standard based on HQC. No draft publication was found when checked.
+- id: nist-additional-signatures
+  title: NIST additional digital signature schemes process
+  body: NIST
+  status: in-development
+  status_date: '2026-05-14'
+  source_url: https://csrc.nist.gov/projects/pqc-dig-sig
+  verified_on: '2026-11-11'
+  note: Round 3 announced 2026-05-14; NIST IR 8610 advances nine candidates.
+- id: nist-ir-8547
+  title: 'NIST IR 8547: Transition to Post-Quantum Cryptography Standards'
+  body: NIST
+  status: final
+  status_date: '2026-10-27'
+  source_url: https://csrc.nist.gov/pubs/ir/8547/final
+  verified_on: '2026-11-11'
+  note: Document history lists the draft of 2024-11-12 and the final of 2026-10-27.
+- id: tls-ecdhe-mlkem
+  title: Post-quantum hybrid ECDHE-MLKEM key agreement for TLS 1.3
+  body: IETF
+  group: tls
+  datatracker_name: draft-ietf-tls-ecdhe-mlkem
+  rfc: RFC 10024
+  status: rfc-published
+  status_date: '2026-08-10'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-tls-ecdhe-mlkem/
+  verified_on: '2026-11-11'
+- id: tls-mlkem
+  title: ML-KEM post-quantum key agreement for TLS 1.3
+  body: IETF
+  group: tls
+  datatracker_name: draft-ietf-tls-mlkem
+  status: rfc-ed-queue
+  status_date: '2026-09-17'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-tls-mlkem/
+  verified_on: '2026-11-11'
+- id: tls-mldsa
+  title: Use of ML-DSA in TLS 1.3
+  body: IETF
+  group: tls
+  datatracker_name: draft-ietf-tls-mldsa
+  status: rfc-ed-queue
+  status_date: '2026-09-11'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-tls-mldsa/
+  verified_on: '2026-11-11'
+- id: tls-hybrid-design
+  title: Hybrid key exchange in TLS 1.3
+  body: IETF
+  group: tls
+  datatracker_name: draft-ietf-tls-hybrid-design
+  rfc: RFC 9954
+  status: rfc-published
+  status_date: '2026-07-15'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-tls-hybrid-design/
+  verified_on: '2026-11-11'
+- id: tls-composite-mldsa
+  title: Use of composite ML-DSA in TLS 1.3
+  body: IETF
+  group: tls
+  datatracker_name: draft-ietf-tls-composite-mldsa
+  status: wg-draft
+  status_date: '2026-10-23'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-tls-composite-mldsa/
+  verified_on: '2026-11-11'
+- id: lamps-dilithium-certificates
+  title: X.509 algorithm identifiers for ML-DSA
+  body: IETF
+  group: lamps
+  datatracker_name: draft-ietf-lamps-dilithium-certificates
+  rfc: RFC 9881
+  status: rfc-published
+  status_date: '2025-10-30'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-lamps-dilithium-certificates/
+  verified_on: '2026-11-11'
+- id: lamps-cms-ml-dsa
+  title: ML-DSA in the Cryptographic Message Syntax
+  body: IETF
+  group: lamps
+  datatracker_name: draft-ietf-lamps-cms-ml-dsa
+  rfc: RFC 9882
+  status: rfc-published
+  status_date: '2025-10-30'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-lamps-cms-ml-dsa/
+  verified_on: '2026-11-11'
+- id: lamps-kyber-certificates
+  title: X.509 algorithm identifiers for ML-KEM
+  body: IETF
+  group: lamps
+  datatracker_name: draft-ietf-lamps-kyber-certificates
+  rfc: RFC 9935
+  status: rfc-published
+  status_date: '2026-03-06'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-lamps-kyber-certificates/
+  verified_on: '2026-11-11'
+- id: lamps-cms-kyber
+  title: ML-KEM in the Cryptographic Message Syntax
+  body: IETF
+  group: lamps
+  datatracker_name: draft-ietf-lamps-cms-kyber
+  rfc: RFC 9936
+  status: rfc-published
+  status_date: '2026-03-06'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-lamps-cms-kyber/
+  verified_on: '2026-11-11'
+- id: lamps-x509-slhdsa
+  title: X.509 algorithm identifiers for SLH-DSA
+  body: IETF
+  group: lamps
+  datatracker_name: draft-ietf-lamps-x509-slhdsa
+  rfc: RFC 9909
+  status: rfc-published
+  status_date: '2025-12-22'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-lamps-x509-slhdsa/
+  verified_on: '2026-11-11'
+- id: lamps-cms-sphincs-plus
+  title: SLH-DSA in the Cryptographic Message Syntax
+  body: IETF
+  group: lamps
+  datatracker_name: draft-ietf-lamps-cms-sphincs-plus
+  rfc: RFC 9814
+  status: rfc-published
+  status_date: '2025-07-19'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-lamps-cms-sphincs-plus/
+  verified_on: '2026-11-11'
+- id: lamps-pq-composite-sigs
+  title: Composite ML-DSA for X.509 PKI
+  body: IETF
+  group: lamps
+  datatracker_name: draft-ietf-lamps-pq-composite-sigs
+  rfc: RFC 10073
+  status: rfc-published
+  status_date: '2026-11-07'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-lamps-pq-composite-sigs/
+  verified_on: '2026-11-11'
+- id: lamps-cms-composite-sigs
+  title: Composite ML-DSA in CMS
+  body: IETF
+  group: lamps
+  datatracker_name: draft-ietf-lamps-cms-composite-sigs
+  rfc: RFC 10082
+  status: rfc-published
+  status_date: '2026-11-07'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-lamps-cms-composite-sigs/
+  verified_on: '2026-11-11'
+- id: lamps-pq-composite-kem
+  title: Composite ML-KEM for X.509 PKI
+  body: IETF
+  group: lamps
+  datatracker_name: draft-ietf-lamps-pq-composite-kem
+  status: rfc-ed-queue
+  status_date: '2026-10-14'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-lamps-pq-composite-kem/
+  verified_on: '2026-11-11'
+- id: lamps-cms-composite-kem
+  title: Composite ML-KEM in CMS
+  body: IETF
+  group: lamps
+  datatracker_name: draft-ietf-lamps-cms-composite-kem
+  status: rfc-ed-queue
+  status_date: '2026-10-15'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-lamps-cms-composite-kem/
+  verified_on: '2026-11-11'
+- id: pquip-pqt-hybrid-terminology
+  title: Terminology for post-quantum traditional hybrid schemes
+  body: IETF
+  group: pquip
+  datatracker_name: draft-ietf-pquip-pqt-hybrid-terminology
+  rfc: RFC 9794
+  status: rfc-published
+  status_date: '2025-06-13'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-pquip-pqt-hybrid-terminology/
+  verified_on: '2026-11-11'
+- id: pquip-hybrid-signature-spectrums
+  title: Hybrid signature spectrums
+  body: IETF
+  group: pquip
+  datatracker_name: draft-ietf-pquip-hybrid-signature-spectrums
+  rfc: RFC 9955
+  status: rfc-published
+  status_date: '2026-07-17'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-pquip-hybrid-signature-spectrums/
+  verified_on: '2026-11-11'
+- id: pquip-pqc-engineers
+  title: Post-quantum cryptography for engineers
+  body: IETF
+  group: pquip
+  datatracker_name: draft-ietf-pquip-pqc-engineers
+  rfc: RFC 9958
+  status: rfc-published
+  status_date: '2026-06-18'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-pquip-pqc-engineers/
+  verified_on: '2026-11-11'
+- id: pquip-hbs-state
+  title: 'Hash-based signatures: state and backup management'
+  body: IETF
+  group: pquip
+  datatracker_name: draft-ietf-pquip-hbs-state
+  rfc: RFC 10033
+  status: rfc-published
+  status_date: '2026-09-15'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-pquip-hbs-state/
+  verified_on: '2026-11-11'
+- id: pquip-pqc-hsm-constrained
+  title: Adapting constrained devices for post-quantum cryptography
+  body: IETF
+  group: pquip
+  datatracker_name: draft-ietf-pquip-pqc-hsm-constrained
+  status: iesg-evaluation
+  status_date: '2026-10-29'
+  source_url: https://datatracker.ietf.org/doc/draft-ietf-pquip-pqc-hsm-constrained/
+  verified_on: '2026-11-11'
