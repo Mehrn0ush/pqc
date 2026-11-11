@@ -1,0 +1,44 @@
+<!-- excerpt of https://botan.randombit.net/news.html fetched 2026-11-11 -->
+<h2>Version 3.14.1, 2026-11-06<a class="headerlink" href="#version-3-14-1-2026-11-06" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Bump the reported version of FFI; this was missed in 3.14.0</p></li>
+<li><p>Fix a build failure in 3.14.0 when deprecated features are disabled and
+<code class="docutils literal notranslate"><span class="pre">legacy_ec_point</span></code> is explicitly enabled. (GH #6100)</p></li>
+</ul>
+</section>
+<section id="version-3-14-0-2026-11-04">
+<h2>Version 3.14.0, 2026-11-04<a class="headerlink" href="#version-3-14-0-2026-11-04" title="Link to this heading">¶</a></h2>
+<section id="general-notes">
+<h3>General Notes<a class="headerlink" href="#general-notes" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Botan4 is expected to be released in May 2027. This new major release will
+remove significant deprecated functionality.  Please consult the deprecation
+notes in <code class="docutils literal notranslate"><span class="pre">doc/deprecated.rst</span></code> and if your usage would be impacted by any
+such deprecations, please comment in GH #4666</p></li>
+<li><p>Add a warning to the documentation regarding recent research on the security
+of Classic McEliece. Following the current recommendations of BSI, Classic
+McEliece should only be used in a hybrid scheme. (GH #5993)</p></li>
+<li><p>The API documentation now consistently warns about algorithms and operations
+with known side channel issues. (GH #6007)</p></li>
+</ul>
+</section>
+<section id="new-apis-and-features">
+<h3>New APIs and Features<a class="headerlink" href="#new-apis-and-features" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Add types <code class="docutils literal notranslate"><span class="pre">PK_Signature_Options</span></code> <code class="docutils literal notranslate"><span class="pre">PK_Encryption_Options</span></code>, <code class="docutils literal notranslate"><span class="pre">PK_KEM_Options</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">PK_Key_Agreement_Options</span></code> which allow an application to precisely control
+how public key operations (signature, encryption, decryption, KEM, etc) are
+performed. (GH #5489 #5864)</p></li>
+<li><p>Add an implementation of HPKE from RFC 9180 (GH #5989)</p></li>
+<li><p>Add an implementation of the BLS12-381 pairing friendly curve, including the
+groups G1, G2, and Gt and the pairing operation. (GH #5718)</p></li>
+<li><p>Add <code class="d
+...
+rsion-3-13-0-2026-08-13">
+<h2>Version 3.13.0, 2026-08-13<a class="headerlink" href="#version-3-13-0-2026-08-13" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>CVE-2026-118766 Fix a blind SSRF during OCSP request processing. A malicious
+OCSP responder or network attacker could cause the application to perform a
+blind GET to an internal service. (GH #5815)</p></li>
+<li><p>CVE-2026-118765 Fix a bug in <code class="docutils literal notranslate"><span class="pre">AutoSeeded_RNG</span></code>, affecting only platforms
+without a system RNG, where an API sequence of calling first <code class="docutils literal n

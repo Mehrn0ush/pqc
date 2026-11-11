@@ -18,6 +18,10 @@ ALLOWED_HOSTS = frozenset(
         "api.github.com",
         "datatracker.ietf.org",
         "firefox-source-docs.mozilla.org",
+        "go.dev",
+        "botan.randombit.net",
+        "www.openssh.org",
+        "raw.githubusercontent.com",
     }
 )
 USER_AGENT = "silastron-pqc-tracker (+https://pqc.silastron.com)"

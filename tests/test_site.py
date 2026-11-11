@@ -247,6 +247,19 @@ class SiteBuildTests(unittest.TestCase):
         self.build(self.ctx(implementations=impls))
         self.assertNotIn("<script>alert", self.read("index.html"))
 
+    def test_tag_commit_dates_are_labelled_approximate_and_official_ones_are_not(self):
+        self.build()
+        home = " ".join(visible_text(self.read("index.html")).split())
+        page = " ".join(visible_text(self.read("implementations/openjdk/index.html")).split())
+        go = " ".join(visible_text(self.read("implementations/go/index.html")).split())
+        snap = self.d["snapshot"]["releases"]
+        self.assertEqual(snap["openjdk"]["date_source"], "tag-commit")
+        self.assertIn(f"{snap['openjdk']['published_at']} (approximate)", home)
+        self.assertIn("approximate, from the tagged commit", page)
+        self.assertEqual(snap["go"]["date_source"], "official")
+        self.assertIn(f"published {snap['go']['published_at']}", go)
+        self.assertNotIn("approximate", go.split("Latest release")[1].split("Change history")[0])
+
     def test_fips_206_phrasing_names_nist_page_date_and_sources(self):
         self.build()
         text = " ".join(visible_text(self.read("standards/index.html")).split())

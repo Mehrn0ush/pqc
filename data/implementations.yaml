@@ -250,10 +250,8 @@
   homepage: https://botan.randombit.net/
   repo: randombit/botan
   release_source:
-    type: github_tags
-    repo: randombit/botan
-    prefix: '3.'
-    tag_regex: ^(\d+)\.(\d+)\.(\d+)$
+    type: botan_news
+    url: https://botan.randombit.net/news.html
   algorithms:
     mlkem:
       status: supported
@@ -297,10 +295,8 @@
   homepage: https://www.bouncycastle.org/
   repo: bcgit/bc-java
   release_source:
-    type: github_tags
-    repo: bcgit/bc-java
-    prefix: r1rv
-    tag_regex: ^r1rv(\d+)$
+    type: bc_release_notes
+    url: https://raw.githubusercontent.com/bcgit/bc-java/main/docs/releasenotes.md
   algorithms:
     mlkem:
       status: supported
@@ -347,10 +343,8 @@
   homepage: https://go.dev/
   repo: golang/go
   release_source:
-    type: github_tags
-    repo: golang/go
-    prefix: go1.
-    tag_regex: ^go(\d+)\.(\d+)(?:\.(\d+))?$
+    type: go_release_history
+    url: https://go.dev/doc/devel/release
   algorithms:
     mlkem:
       status: supported
@@ -549,10 +543,8 @@
   homepage: https://www.openssh.org/
   repo: openssh/openssh-portable
   release_source:
-    type: github_tags
-    repo: openssh/openssh-portable
-    prefix: V_
-    tag_regex: ^V_(\d+)_(\d+)_P(\d+)$
+    type: openssh_release_notes
+    url: https://www.openssh.org/releasenotes.html
   algorithms:
     mlkem:
       status: supported

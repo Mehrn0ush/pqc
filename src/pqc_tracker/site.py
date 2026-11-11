@@ -286,6 +286,14 @@ def hybrid_title(alg: str) -> str:
     return f' title="{esc(HYBRID_COLUMN_HELP)}"' if alg == "hybrid_kex" else ""
 
 
+def release_date(rel: dict, *, verb: bool = False) -> str:
+    """Official dates are shown plainly; a tag-commit date is labelled approximate."""
+    d = esc(rel["published_at"])
+    if rel.get("date_source") == "tag-commit":
+        return f"about {d} (approximate, from the tagged commit)" if verb else f"{d} (approximate)"
+    return f"published {d}" if verb else d
+
+
 def matrix(ctx: Context) -> str:
     head = "".join(
         f'<th scope="col"{hybrid_title(a)}>{esc(ALGORITHMS[a][0])}<br><span class="when">{esc(ALGORITHMS[a][1])}</span></th>'
@@ -302,7 +310,7 @@ def matrix(ctx: Context) -> str:
             cells.append(f"<td>{cell_badge(c)}{since}</td>")
         latest = (
             f'<span class="when">latest {esc(rel["tag"])}'
-            + (f", {esc(rel['published_at'])}" if rel.get("published_at") else "")
+            + (f", {release_date(rel)}" if rel.get("published_at") else "")
             + "</span>"
             if rel
             else ""
@@ -550,7 +558,7 @@ def implementation_page(ctx: Context, impl: dict) -> str:
             f"<td>{esc(c.get('verified_on') or c.get('checked_on') or '') or DASH}</td><td>{note_cell(c)}</td></tr>"
         )
     if rel:
-        when = f", published {esc(rel['published_at'])}" if rel.get("published_at") else ""
+        when = f", {release_date(rel, verb=True)}" if rel.get("published_at") else ""
         latest = (
             f'<p>Latest release found: <a href="{esc(rel["url"])}" rel="noopener">{esc(rel["tag"])}</a>{when}. '
             "A newer release does not change any status below until a person reviews it.</p>"
@@ -616,7 +624,7 @@ def methodology_page(ctx: Context) -> str:
 <p>If any source errors or returns malformed data, the whole run is discarded, the last good snapshot stays, the workflow fails, and every page shows a "data stale since" notice. Partial data is never published.</p>
 <h2>Sources and licences</h2>
 <ul>
-<li>Release data: GitHub Releases and Git tags APIs, the NSS release notes, per project as shown on each project page. For projects without GitHub releases the date is the tagged commit's date, an approximation of the release date.</li>
+<li>Release data: GitHub Releases and Git tags APIs, the Go, Botan, OpenSSH, Bouncy Castle and NSS release pages, per project as shown on each project page. Release dates come from the project's own release page or announcement (Go, Botan, Bouncy Castle, OpenSSH and NSS) or its GitHub release. Only OpenJDK's official release pages refuse automated requests, so its date is the tagged commit's date and is shown as approximate.</li>
 <li>Draft data: the IETF Datatracker.</li>
 <li>Standards status: NIST CSRC pages and the Datatracker, linked per row.</li>
 <li>Evidence: each project's own release notes and documentation, linked per cell. We link to sources and quote only short factual phrases; their text stays under their own licences.</li>

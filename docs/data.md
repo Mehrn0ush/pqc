@@ -26,9 +26,18 @@ Each claim has a `status`:
   URL searched) and a `note`; an issue-tracker link goes in the note. It is never rendered as "not supported".
 - `not-checked`: nobody has looked yet. No other fields.
 
-`release_source` is one of `github_release` (latest non-prerelease GitHub release), `github_tags` (highest tag
-matching `tag_regex` under `prefix`; date is the tagged commit's date) or `nss_release_notes` (the Mozilla NSS
-release-notes index).
+`release_source` is one of:
+
+- `github_release`: latest non-prerelease GitHub release (`date_source: official`).
+- `github_tags`: highest tag matching `tag_regex` under `prefix`; the date is the tagged commit's date
+  (`date_source: tag-commit`, shown as "approximate"). Used only where no machine-readable official date exists
+  (OpenJDK, whose release pages return 403 to automated clients).
+- `go_release_history`, `botan_news`, `openssh_release_notes`, `bc_release_notes`, `nss_release_notes`: read the
+  project's own release page (`url`); the date is the one the project publishes (`date_source: official`).
+  The tag keeps the spelling the git tag would have so the changelog does not report a new release when only
+  the source changes.
+
+Each snapshot release records `date_source`. A page that changes shape fails the whole Collect run.
 
 ### `data/standards.yaml`  (`standards.schema.json`)
 
