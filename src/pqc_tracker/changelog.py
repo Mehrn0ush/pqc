@@ -3,8 +3,8 @@
 Two kinds of entry, never mixed up:
 - machine-detected facts (new release, new draft revision, draft state change), found by diffing
   consecutive snapshots. They say nothing about support status.
-- human-confirmed status changes, found by diffing the YAML files against the statuses of the
-  previously published build.
+- human-confirmed status changes, derived from the git history of data/implementations.yaml and
+  data/standards.yaml (see history.py). They are never stored, so they can always be rebuilt from a clone.
 """
 
 from __future__ import annotations
@@ -136,7 +136,7 @@ def append_entries(log: dict, entries: list[dict]) -> dict:
 
 
 def statuses_of(implementations: list[dict], standards: list[dict]) -> dict:
-    """The compact status map stored with each published build and used as the next build's baseline."""
+    """The compact status map of one version of the YAML files (the 'before' side of a diff)."""
     return {
         "schema_version": SCHEMA_VERSION,
         "implementations": {
@@ -151,9 +151,11 @@ def diff_statuses(
     implementations: list[dict],
     standards: list[dict],
     built_on: str,
+    ref: str | None = None,
 ) -> list[dict]:
-    """Human-confirmed status changes: YAML now versus the previously published build.
-    No baseline (first deploy) means no entries."""
+    """Human-confirmed status changes between the statuses in `baseline` and the YAML now. `ref` (a commit
+    id) is part of every entry id, so two changes to one cell on the same day stay distinct.
+    No baseline means no entries."""
     if baseline is None:
         return []
     out: list[dict] = []
@@ -170,7 +172,7 @@ def diff_statuses(
                     title=f"{impl['name']} added to the tracker",
                     detected_by="human",
                     to="added",
-                    id_parts=("added", built_on),
+                    id_parts=("added", built_on, ref),
                 )
             )
             continue
@@ -190,7 +192,7 @@ def diff_statuses(
                         frm=old.get(alg),
                         to=claim["status"],
                         url=claim.get("evidence_url"),
-                        id_parts=(claim["status"], built_on),
+                        id_parts=(claim["status"], built_on, ref),
                     )
                 )
     base_std = baseline.get("standards", {})
@@ -206,7 +208,7 @@ def diff_statuses(
                     title=f"{std['title']} added to the tracker",
                     detected_by="human",
                     to="added",
-                    id_parts=("added", built_on),
+                    id_parts=("added", built_on, ref),
                 )
             )
         elif old != std["status"]:
@@ -224,15 +226,15 @@ def diff_statuses(
                     frm=old,
                     to=std["status"],
                     url=std["source_url"],
-                    id_parts=(std["status"], built_on),
+                    id_parts=(std["status"], built_on, ref),
                 )
             )
     return out
 
 
 def merge_for_publication(*groups: list[dict]) -> list[dict]:
-    """Union of the repo log, the previously published log and newly diffed entries, de-duplicated by
-    id (first occurrence wins) and sorted newest first. Nothing already published can disappear."""
+    """Union of the committed machine log and the entries derived from git history, de-duplicated by
+    id (first occurrence wins) and sorted newest first."""
     seen: dict[str, dict] = {}
     for group in groups:
         for e in group:

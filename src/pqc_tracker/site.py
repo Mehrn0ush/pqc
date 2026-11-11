@@ -11,7 +11,6 @@ from pathlib import Path
 from urllib.parse import urlparse
 from xml.sax.saxutils import escape as xml_escape
 
-from pqc_tracker import changelog as cl
 from pqc_tracker.config import (
     ALGORITHMS,
     ESSAY_LABEL,
@@ -619,7 +618,7 @@ def methodology_page(ctx: Context) -> str:
 <li><strong>Human-reviewed statuses.</strong> Written in <code>data/implementations.yaml</code> and <code>data/standards.yaml</code>. Each claim has an evidence URL and the date a person last read it.</li>
 <li><strong>Machine-collected facts.</strong> Latest release tag and date per project, and latest revision and state per IETF draft, collected daily into <code>data/snapshots/latest.json</code>.</li>
 </ul>
-<p>Automation detects change; a person confirms what it means. A new release or draft revision never changes a status by itself. It adds a changelog entry marked as automatically detected and opens a GitHub issue labelled <code>review-needed</code> with the link. Status changes appear in the changelog only after the YAML files change; they are found by comparing against the previously published build.</p>
+<p>Automation detects change; a person confirms what it means. A new release or draft revision never changes a status by itself. It adds a changelog entry marked as automatically detected and opens a GitHub issue labelled <code>review-needed</code> with the link. Status changes appear in the changelog only after the YAML files change; they are derived from the git history of those two files, so the whole log can be rebuilt from a clone of the repository and does not depend on the live site.</p>
 <h2>If collection fails</h2>
 <p>If any source errors or returns malformed data, the whole run is discarded, the last good snapshot stays, the workflow fails, and every page shows a "data stale since" notice. Partial data is never published.</p>
 <h2>Sources and licences</h2>
@@ -642,7 +641,6 @@ def methodology_page(ctx: Context) -> str:
 <ul>
 <li><a href="/data/latest.json">/data/latest.json</a>: current statuses with latest releases and draft states. Schema versions are in <code>schema_version</code>.</li>
 <li><a href="/data/changelog.json">/data/changelog.json</a>: full changelog.</li>
-<li><a href="/data/statuses.json">/data/statuses.json</a>: compact status map used to detect status changes between builds.</li>
 <li><a href="/schemas/implementations.schema.json">JSON Schemas</a> for the input and output files are published under <code>/schemas/</code>.</li>
 </ul>
 <h2>Report an error</h2>
@@ -766,9 +764,6 @@ def build_site(ctx: Context, out_dir: Path, schema_dir: Path) -> list[str]:
     (data / "latest.json").write_text(dumps_json(latest_json(ctx)), encoding="utf-8")
     (data / "changelog.json").write_text(
         dumps_json({"schema_version": "1.0.0", "entries": ctx.entries}), encoding="utf-8"
-    )
-    (data / "statuses.json").write_text(
-        dumps_json(cl.statuses_of(ctx.implementations, ctx.standards)), encoding="utf-8"
     )
     schemas = out_dir / "schemas"
     schemas.mkdir()
