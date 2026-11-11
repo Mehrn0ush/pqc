@@ -1,0 +1,82 @@
+name: Publish
+
+# Builds the static site from main and deploys it with the official Pages actions.
+# Runs on push to main and after every completed Collect run: a failed Collect also publishes, so
+# the site shows the "data stale since" notice while keeping the last good snapshot.
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: [Collect]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_baseline:
+        description: "First deploy only: skip downloading the previously published statuses"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Validate, test and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    if: >
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure')
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          python -m pip install -r requirements.lock
+          python -m pip install --no-deps -e .
+
+      - name: Validate schemas
+        run: pqc-tracker validate
+
+      - name: Run tests
+        run: python -m unittest discover -s tests
+
+      - name: Download previously published statuses
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.skip_baseline) }}
+        run: pqc-tracker fetch-baseline --out dist-baseline
+
+      - name: Build site
+        run: pqc-tracker build --out dist/site --previous-dir dist-baseline
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: dist/site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
