@@ -96,6 +96,43 @@ class PushWithRetryTests(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(self.origin_log()[0], "collect")
 
+    def shallow_clone(self):
+        c = self.a.parent / "shallow"
+        git(self.a.parent, "clone", "-q", "--depth", "1", f"file://{self.origin}", str(c))
+        self.assertEqual(git(c, "rev-parse", "--is-shallow-repository").stdout.strip(), "true")
+        git(c, "checkout", "-q", "main")
+        return c
+
+    def test_shallow_clone_pushes_after_main_moved_on(self):
+        """Collect's checkout used to be shallow: the rebase must still work when main has new commits."""
+        c = self.shallow_clone()
+        self.commit(self.b, "y.json", '{"b": 1}\n', "someone else 1")
+        self.commit(self.b, "y.json", '{"b": 2}\n', "someone else 2")
+        git(self.b, "push", "-q", "origin", "main")
+        self.commit(c, "x.json", '{"a": 1}\n', "collect")
+        r = subprocess.run([str(SCRIPT), "main"], cwd=c, env=ENV, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(self.origin_log()[:3], ["collect", "someone else 2", "someone else 1"])
+
+    def test_shallow_clone_plain_push_and_conflict(self):
+        c = self.shallow_clone()
+        self.commit(c, "x.json", '{"a": 1}\n', "collect")
+        r = subprocess.run([str(SCRIPT), "main"], cwd=c, env=ENV, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        c2 = self.a.parent / "shallow2"
+        git(self.a.parent, "clone", "-q", "--depth", "1", f"file://{self.origin}", str(c2))
+        self.commit(c2, "y.json", '{"mine": 1}\n', "collect 2")
+        self.commit(self.b, "y.json", '{"theirs": 1}\n', "someone else")
+        git(self.b, "pull", "-q", "--rebase", "origin", "main")
+        git(self.b, "push", "-q", "origin", "main")
+        r = subprocess.run([str(SCRIPT), "main"], cwd=c2, env=ENV, capture_output=True, text=True)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertEqual(git(c2, "status", "--porcelain").stdout, "")
+
+    def test_collect_checks_out_full_history(self):
+        text = (ROOT / ".github/workflows/collect.yml").read_text()
+        self.assertIn("fetch-depth: 0", text)
+
     def test_workflow_uses_the_script_for_both_pushes(self):
         text = (ROOT / ".github/workflows/collect.yml").read_text()
         self.assertEqual(text.count(".github/scripts/push-with-retry.sh main"), 2)

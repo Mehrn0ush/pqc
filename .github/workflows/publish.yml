@@ -27,6 +27,8 @@ jobs:
     name: Validate, test and build
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    outputs:
+      commit: ${{ steps.commit.outputs.commit }}
     if: >
       github.event_name != 'workflow_run' ||
       (github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure')
@@ -37,6 +39,10 @@ jobs:
           ref: main
           # The changelog's confirmed status changes are derived from the git history of the YAML files.
           fetch-depth: 0
+
+      - name: Record the commit being built
+        id: commit
+        run: echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
@@ -73,3 +79,38 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  smoke-test:
+    name: Check the live site serves this build
+    needs: [build, deploy]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout the built commit
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ needs.build.outputs.commit }}
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          python -m pip install -r requirements.lock
+          python -m pip install --no-deps -e .
+
+      - name: Download the artifact that was deployed
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: github-pages
+          path: deployed
+
+      - name: Unpack it
+        run: mkdir expected && tar -xf deployed/artifact.tar -C expected
+
+      - name: Compare the live site with the build (retries for up to five minutes)
+        run: pqc-tracker smoke-test --site-dir expected --url https://pqc.silastron.com --timeout 300 --interval 15

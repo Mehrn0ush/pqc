@@ -24,7 +24,7 @@ FILES = ("data/implementations.yaml", "data/standards.yaml")
 LEGACY_STATUS = {"unverified": "not-checked"}
 
 
-def _git(repo: Path, *args: str) -> str:
+def git(repo: Path, *args: str) -> str:
     try:
         proc = subprocess.run(  # noqa: S603
             ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False, timeout=60
@@ -89,10 +89,10 @@ def published_status_changes(repo: Path) -> list[dict]:
 
 def _resolve_baseline(repo: Path, sha: str) -> str:
     try:
-        full = _git(repo, "rev-parse", "--verify", f"{sha}^{{commit}}").strip()
+        full = git(repo, "rev-parse", "--verify", f"{sha}^{{commit}}").strip()
     except ValidationError as exc:
         raise ValidationError(f"{BASELINE_FILE}: commit {sha} does not exist in this repository") from exc
-    if full not in _git(repo, "rev-list", "--first-parent", "HEAD").split():
+    if full not in git(repo, "rev-list", "--first-parent", "HEAD").split():
         raise ValidationError(
             f"{BASELINE_FILE}: commit {sha} is not on the first-parent line of HEAD (use a commit on main)"
         )
@@ -100,7 +100,7 @@ def _resolve_baseline(repo: Path, sha: str) -> str:
 
 
 def _tracking_began(repo: Path, full: str, impls: list[dict], stds: list[dict]) -> dict:
-    day = datetime.fromtimestamp(int(_git(repo, "show", "-s", "--format=%ct", full)), UTC).date().isoformat()
+    day = datetime.fromtimestamp(int(git(repo, "show", "-s", "--format=%ct", full)), UTC).date().isoformat()
     return changelog.entry(
         date=day,
         kind="tracking-began",
@@ -120,7 +120,7 @@ def derive_status_changes(repo: Path, baseline: str | None = None) -> list[dict]
     """Confirmed status changes in the history of `repo`, oldest first. With `baseline` (a commit SHA),
     nothing before that commit is emitted; its state is the starting point and one 'tracking-began' entry
     stands for it. Without it, the first commit that has both files is the starting point."""
-    if _git(repo, "rev-parse", "--is-shallow-repository").strip() == "true":
+    if git(repo, "rev-parse", "--is-shallow-repository").strip() == "true":
         raise ValidationError(
             "the repository is a shallow clone: the full git history is needed to build the changelog "
             "(use fetch-depth: 0)"
@@ -135,11 +135,11 @@ def derive_status_changes(repo: Path, baseline: str | None = None) -> list[dict]
         _normalise(impls, stds)
         state = changelog.statuses_of(impls, stds)
         entries.append(_tracking_began(repo, full, impls, stds))
-        log = _git(
+        log = git(
             repo, "log", "--first-parent", "--reverse", "--format=%H %ct", f"{full}..HEAD", "--", *FILES
         )
     else:
-        log = _git(repo, "log", "--first-parent", "--reverse", "--format=%H %ct", "--", *FILES)
+        log = git(repo, "log", "--first-parent", "--reverse", "--format=%H %ct", "--", *FILES)
     prev = state
     for line in log.splitlines():
         sha, ts = line.split()

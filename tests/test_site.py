@@ -362,6 +362,29 @@ class CellRenderingTests(unittest.TestCase):
         self.assertIn('id="reason-mldsa"', page)
         self.assertIn("† inferred: see reason", visible_text(home))
 
+    def test_every_cell_carries_its_label_for_the_mobile_card(self):
+        _, page = self.build()
+        for label in ("Status", "Version", "Evidence", "Last verified", "Note and reason"):
+            self.assertIn(f'data-label="{label}"', page)
+        self.assertIn('data-label="Reason (inferred)"', page)
+        self.assertIn('class="card-only">Scope: hybrid only, as X25519MLKEM768', page)
+        self.assertIn('class="card-only">Scope: standalone', page)
+        self.assertNotIn("Scope: None", page)
+
+    def test_empty_cells_are_hidden_on_the_card_and_hybrid_column_has_no_scope_line(self):
+        _, page = self.build()
+        self.assertIn('class="empty" data-label="Version"', page)
+        hybrid_row = page[page.index('<tr id="hybrid_kex">') :]
+        self.assertNotIn("Scope:", hybrid_row)
+
+    def test_stylesheet_turns_the_table_into_cards_below_600px(self):
+        css = (site.STATIC / "style.css").read_text()
+        self.assertIn("@media (max-width: 37.5rem)", css)
+        block = css[css.index("@media (max-width: 37.5rem)") :]
+        self.assertIn("table.evidence tr {", block)
+        self.assertIn("attr(data-label)", block)
+        self.assertIn("table.evidence td.empty { display: none; }", block)
+
     def test_missing_version_is_never_blank(self):
         home, page = self.build()
         self.assertIn("version not stated", visible_text(home))

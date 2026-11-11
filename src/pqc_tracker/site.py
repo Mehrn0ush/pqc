@@ -71,6 +71,7 @@ class Context:
     status: dict | None
     entries: list[dict]  # merged changelog, newest first
     now: datetime
+    build: dict | None = None  # contents of /build.json
 
     @property
     def releases(self) -> dict:
@@ -194,12 +195,20 @@ def header(path: str) -> str:
     )
 
 
+def build_note(ctx: Context) -> str:
+    if not ctx.build:
+        return ""
+    sha = ctx.build["commit"]
+    return f' Build <a href="{REPO_URL}/commit/{esc(sha)}" rel="noopener"><code>{esc(sha[:7])}</code></a>.'
+
+
 def footer(ctx: Context) -> str:
     collected = ctx.collected_at[:10] if ctx.collected_at else "never"
     return (
         "<footer>"
         f"<p>Last verified: <strong>{esc(ctx.last_verified)}</strong> (most recent human check of any entry). "
-        f"Last collected: <strong>{esc(collected)}</strong> (automated release and draft data).</p>"
+        f"Last collected: <strong>{esc(collected)}</strong> (automated release and draft data)."
+        f"{build_note(ctx)}</p>"
         "<ul>"
         f'<li><a href="{esc(ESSAY_URL)}" rel="noopener">{esc(ESSAY_LABEL)}</a></li>'
         f'<li><a href="{NEWSLETTER_URL}" rel="noopener">Join the Orbit</a></li>'
@@ -616,23 +625,50 @@ def evidence_cell(c: dict) -> str:
     )
 
 
+def scope_line(alg: str, c: dict) -> str:
+    """Shown only on the mobile card, where scope is its own field."""
+    if alg == "hybrid_kex" or "scope" not in c:
+        return ""
+    text = f"hybrid only, as {esc(c['scheme'])}" if c["scope"] == "hybrid-only" else "standalone"
+    return f'<span class="card-only">Scope: {text}</span>'
+
+
+def block(label: str, text: str, prefix: str = "") -> str:
+    """One labelled part of the Note cell. The label shows on the mobile card; on the wide table the part
+    carries its own inline prefix instead."""
+    desk = f'<strong class="desk">{esc(prefix)}</strong> ' if prefix else ""
+    return f'<span class="blk" data-label="{esc(label)}">{desk}{text}</span>'
+
+
 def note_cell(c: dict) -> str:
     parts = []
     if c.get("evidence_strength") == "inferred":
-        parts.append(f"<strong>Inferred:</strong> {esc(c['strength_reason'])}")
+        parts.append(block("Reason (inferred)", esc(c["strength_reason"]), "Inferred:"))
     if c.get("scope") == "hybrid-only":
-        parts.append(f"Hybrid only: available only as {esc(c['scheme'])}.")
+        parts.append(block("Hybrid only", f"Available only as {esc(c['scheme'])}."))
     if c["status"] == "planned":
         basis = c["maintainer_basis"]
         parts.append(
-            f"Maintainer statement dated {esc(c['statement_date'])}; maintainer status rests on "
-            f"{esc(MAINTAINER_BASIS_LABELS[basis['kind']])}: {esc(basis['detail'])}"
+            block(
+                "Maintainer statement",
+                f"Dated {esc(c['statement_date'])}; maintainer status rests on "
+                f"{esc(MAINTAINER_BASIS_LABELS[basis['kind']])}: {esc(basis['detail'])}",
+            )
         )
-    if c.get("expired_planned"):
-        parts.append("History, not a current claim:")
     if c.get("note"):
-        parts.append(linkify(esc(c["note"])))
+        history = "History, not a current claim"
+        if c.get("expired_planned"):
+            parts.append(block(history, linkify(esc(c["note"])), history + ":"))
+        else:
+            parts.append(block("Note", linkify(esc(c["note"]))))
     return " ".join(parts)
+
+
+def td(label: str, content: str, id_: str | None = None) -> str:
+    """A cell that carries its column name, so the mobile card can label it. Empty cells are hidden there."""
+    cls = ' class="empty"' if content in (DASH, "") else ""
+    ident = f' id="{id_}"' if id_ else ""
+    return f'<td{ident}{cls} data-label="{esc(label)}">{content}</td>'
 
 
 def implementation_page(ctx: Context, impl: dict) -> str:
@@ -640,10 +676,12 @@ def implementation_page(ctx: Context, impl: dict) -> str:
     rows = []
     for alg, (label, std) in ALGORITHMS.items():
         c = impl["algorithms"][alg]
+        verified = esc(c.get("verified_on") or c.get("checked_on") or "") or DASH
         rows.append(
             f'<tr id="{alg}"><th scope="row"{hybrid_title(alg)}>{esc(label)}<span class="when">{esc(std)}</span></th>'
-            f"<td>{cell_badge(c)}</td><td>{since_cell(c)}</td><td>{evidence_cell(c)}</td>"
-            f'<td>{esc(c.get("verified_on") or c.get("checked_on") or "") or DASH}</td><td id="reason-{alg}">{note_cell(c)}</td></tr>'
+            f"{td('Status', cell_badge(c) + scope_line(alg, c))}"
+            f"{td('Version', since_cell(c))}{td('Evidence', evidence_cell(c))}{td('Last verified', verified)}"
+            f"{td('Note and reason', note_cell(c), id_=f'reason-{alg}')}</tr>"
         )
     if rel:
         when = f", {release_date(rel, verb=True)}" if rel.get("published_at") else ""
@@ -666,7 +704,7 @@ def implementation_page(ctx: Context, impl: dict) -> str:
         f'<p class="lede">{esc(impl["kind"].capitalize())}. <a href="{esc(impl["homepage"])}" rel="noopener">Project site</a>{repo}</p>'
         f"{provenance_line(ctx)}<h2>Post-quantum support</h2>"
         f"<p>{esc(HYBRID_COLUMN_HELP)}</p>{legend()}"
-        '<div class="scroll" role="region" aria-label="Support statuses, scrollable" tabindex="0"><table class="evidence">'
+        '<div class="scroll cards" role="region" aria-label="Support statuses" tabindex="0"><table class="evidence">'
         "<caption>Support status per algorithm, with evidence.</caption><thead><tr>"
         '<th scope="col">Algorithm</th><th scope="col">Status</th><th scope="col">Since version</th>'
         '<th scope="col">Evidence</th><th scope="col">Last verified</th><th scope="col">Note</th></tr></thead>'
@@ -852,6 +890,8 @@ def build_site(ctx: Context, out_dir: Path, schema_dir: Path) -> list[str]:
     data = out_dir / "data"
     data.mkdir()
     (data / "latest.json").write_text(dumps_json(latest_json(ctx)), encoding="utf-8")
+    if ctx.build:
+        (out_dir / "build.json").write_text(dumps_json(ctx.build), encoding="utf-8")
     (data / "changelog.json").write_text(
         dumps_json({"schema_version": "1.0.0", "entries": ctx.entries}), encoding="utf-8"
     )

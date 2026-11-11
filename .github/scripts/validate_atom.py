@@ -1,7 +1,7 @@
 """Validate Atom feeds against the RELAX NG Compact schema in RFC 4287, Appendix B.
 
-Needs lxml and rnc2rng from PyPI (requirements-feed-check.lock) and the network, to read the RFC. Run in
-CI after `pqc-tracker build`:
+Needs lxml and rnc2rng from PyPI (requirements-feed-check.lock); the schema is vendored in vendor/rfc4287.
+Run in CI after `pqc-tracker build`:
 
     python .github/scripts/validate_atom.py dist/site/feed.xml
 
@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import re
 import sys
-import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -21,23 +20,12 @@ from lxml import etree
 
 from pqc_tracker import site
 
-RFC_URL = "https://www.rfc-editor.org/rfc/rfc4287.txt"
-HEADING = "Appendix B.  RELAX NG Compact Schema"
+SCHEMA = Path(__file__).resolve().parents[2] / "vendor" / "rfc4287" / "atom.rnc"
 
 
 def atom_schema() -> etree.RelaxNG:
-    with urllib.request.urlopen(RFC_URL, timeout=60) as r:  # noqa: S310 - fixed https URL
-        text = r.read().decode("utf-8").replace("\f", "")
-    start = text.rindex(HEADING)  # the first hit is the table of contents
-    end = text.index("Authors' Addresses", start)
-    body = text[text.index("# -*- rnc -*-", start) : end]
-    lines = [
-        line.strip()
-        for line in body.splitlines()
-        if not re.match(r"^(Nottingham & Sayre|RFC 4287 +Atom Format)", line)
-    ]
-    rnc = "\n".join(lines) + "\n"
-    xml = rnc2rng.dumps(rnc2rng.loads(rnc))
+    """The RFC 4287 Appendix B schema vendored in this repository, converted to RELAX NG XML syntax."""
+    xml = rnc2rng.dumps(rnc2rng.loads(SCHEMA.read_text(encoding="utf-8")))
     # `namespace local = ""` becomes xmlns:local="", which XML forbids; the schema's `local:*` is already
     # written out as ns="" so the declaration is not needed.
     xml = re.sub(r'\s+xmlns:local=""', "", xml)

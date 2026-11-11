@@ -113,6 +113,7 @@ is at that moment). Publish then builds with the baseline.
 
 | URL | Content |
 | --- | --- |
+| `/build.json` | The commit, build time and SHA-256 of `data/implementations.yaml` this deployment was built from |
 | `/data/latest.json` | Statuses, latest releases, standards with Datatracker state, freshness fields |
 | `/data/changelog.json` | Full changelog, newest first |
 | `/feed.xml` | Atom feed of the latest 100 changelog entries |
