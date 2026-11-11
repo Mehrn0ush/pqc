@@ -10,9 +10,21 @@ published at <https://pqc.silastron.com/schemas/>. Data licence: CC BY 4.0.
 One entry per tracked project: `id`, `name`, `kind` (`library`, `runtime`, `protocol tool`), `homepage`, optional
 `repo`, `release_source`, and `algorithms` with four claims: `mlkem`, `mldsa`, `slhdsa`, `hybrid_kex`.
 
-Each claim: `status` (`supported`, `experimental`, `planned`, `not-supported`, `unverified`), `since_version`,
-`evidence_url`, `verified_on` (ISO date), `note`. Any status other than `unverified` requires `evidence_url`.
-An `unverified` claim cannot carry `since_version`.
+Each claim has a `status`:
+
+- `supported`, `experimental`, `planned`, `not-supported`: need `evidence_url`, `evidence_type`
+  (`release-notes`, `official-docs`, `changelog`, `api-reference`, `source-code`, `issue-tracker`),
+  `evidence_strength` (`stated` or `inferred`) and `verified_on`. `not-supported` is only for an explicit
+  upstream statement. `planned` needs a maintainer's statement; an open request alone is not enough.
+- `inferred` strength needs a one-line `strength_reason`. Source code alone never earns `supported`: a header or
+  module with no statement of support level is at most `experimental`, with `source-code` evidence, `inferred`.
+- `scope` (`standalone` or `hybrid-only`) is required for ML-KEM, ML-DSA and SLH-DSA cells that have a support
+  status, and `hybrid-only` needs `scheme` (for example `X25519MLKEM768`). The `hybrid_kex` cell has no scope.
+- `supported` and `experimental` need `since_version`, which may be `null` only with a `since_note` saying why.
+  The site shows `null` as "version not stated".
+- `no-statement-found`: we looked and found no primary source. Needs `checked_on` and `checked_sources` (every
+  URL searched) and a `note`; an issue-tracker link goes in the note. It is never rendered as "not supported".
+- `not-checked`: nobody has looked yet. No other fields.
 
 `release_source` is one of `github_release` (latest non-prerelease GitHub release), `github_tags` (highest tag
 matching `tag_regex` under `prefix`; date is the tagged commit's date) or `nss_release_notes` (the Mozilla NSS

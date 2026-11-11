@@ -61,8 +61,6 @@ th .when, td .since, td .when { display: block; color: var(--muted); font-size: 
 .s-experimental, .t-draft, .t-in-development, .t-wg-draft { color: var(--warn); }
 .s-planned, .t-iesg-evaluation, .t-rfc-ed-queue { color: var(--info); }
 .s-not-supported { color: var(--bad); }
-.s-unverified, .t-unverified { color: var(--muted); }
-.s-unverified { border-style: dashed; }
 .legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; list-style: none; padding: 0; margin: 0.5rem 0 1rem; max-width: none; font-size: 0.85rem; }
 .filters { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: end; margin: 0.75rem 0; }
 .filters label { display: flex; flex-direction: column; font-size: 0.8rem; color: var(--muted); gap: 0.2rem; }
@@ -87,3 +85,10 @@ footer ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0
   th, td { padding: 0.45rem 0.55rem; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+.s-not-checked { color: var(--muted); border-style: dotted; }
+.s-no-statement-found { color: var(--muted); border-style: dashed; }
+.s-hybrid { border-style: double; border-width: 3px; }
+.scheme, .inferred { display: block; font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
+.inferred { font-weight: 600; }
+.legend .inferred { display: inline; margin: 0; }
+ul.sources { margin: 0.25rem 0 0; padding-left: 1rem; font-size: 0.8rem; max-width: none; }

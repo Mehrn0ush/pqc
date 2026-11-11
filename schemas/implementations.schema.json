@@ -4,49 +4,111 @@
   "title": "Tracked implementations",
   "type": "array",
   "minItems": 1,
-  "items": { "$ref": "#/$defs/implementation" },
+  "items": {
+    "$ref": "#/$defs/implementation"
+  },
   "$defs": {
-    "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
-    "https": { "type": "string", "pattern": "^https://[^\\s]+$" },
+    "date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "https": {
+      "type": "string",
+      "pattern": "^https://[^\\s]+$"
+    },
     "implementation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "name", "kind", "homepage", "release_source", "algorithms"],
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "homepage",
+        "release_source",
+        "algorithms"
+      ],
       "properties": {
-        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
-        "name": { "type": "string", "minLength": 1 },
-        "kind": { "enum": ["library", "runtime", "protocol tool"] },
-        "homepage": { "$ref": "#/$defs/https" },
-        "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "library",
+            "runtime",
+            "protocol tool"
+          ]
+        },
+        "homepage": {
+          "$ref": "#/$defs/https"
+        },
+        "repo": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
         "release_source": {
           "oneOf": [
             {
               "type": "object",
               "additionalProperties": false,
-              "required": ["type", "repo"],
+              "required": [
+                "type",
+                "repo"
+              ],
               "properties": {
-                "type": { "const": "github_release" },
-                "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" }
+                "type": {
+                  "const": "github_release"
+                },
+                "repo": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+                }
               }
             },
             {
               "type": "object",
               "additionalProperties": false,
-              "required": ["type", "repo", "prefix", "tag_regex"],
+              "required": [
+                "type",
+                "repo",
+                "prefix",
+                "tag_regex"
+              ],
               "properties": {
-                "type": { "const": "github_tags" },
-                "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
-                "prefix": { "type": "string" },
-                "tag_regex": { "type": "string", "minLength": 1 }
+                "type": {
+                  "const": "github_tags"
+                },
+                "repo": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+                },
+                "prefix": {
+                  "type": "string"
+                },
+                "tag_regex": {
+                  "type": "string",
+                  "minLength": 1
+                }
               }
             },
             {
               "type": "object",
               "additionalProperties": false,
-              "required": ["type", "url"],
+              "required": [
+                "type",
+                "url"
+              ],
               "properties": {
-                "type": { "const": "nss_release_notes" },
-                "url": { "$ref": "#/$defs/https" }
+                "type": {
+                  "const": "nss_release_notes"
+                },
+                "url": {
+                  "$ref": "#/$defs/https"
+                }
               }
             }
           ]
@@ -54,12 +116,25 @@
         "algorithms": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["mlkem", "mldsa", "slhdsa", "hybrid_kex"],
+          "required": [
+            "mlkem",
+            "mldsa",
+            "slhdsa",
+            "hybrid_kex"
+          ],
           "properties": {
-            "mlkem": { "$ref": "#/$defs/claim" },
-            "mldsa": { "$ref": "#/$defs/claim" },
-            "slhdsa": { "$ref": "#/$defs/claim" },
-            "hybrid_kex": { "$ref": "#/$defs/claim" }
+            "mlkem": {
+              "$ref": "#/$defs/claim"
+            },
+            "mldsa": {
+              "$ref": "#/$defs/claim"
+            },
+            "slhdsa": {
+              "$ref": "#/$defs/claim"
+            },
+            "hybrid_kex": {
+              "$ref": "#/$defs/claim"
+            }
           }
         }
       }
@@ -67,19 +142,329 @@
     "claim": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["status", "verified_on"],
+      "required": [
+        "status"
+      ],
       "properties": {
-        "status": { "enum": ["supported", "experimental", "planned", "not-supported", "unverified"] },
-        "since_version": { "type": ["string", "null"] },
-        "evidence_url": { "$ref": "#/$defs/https" },
-        "verified_on": { "$ref": "#/$defs/date" },
-        "note": { "type": "string", "maxLength": 400 }
+        "status": {
+          "enum": [
+            "supported",
+            "experimental",
+            "planned",
+            "not-supported",
+            "not-checked",
+            "no-statement-found"
+          ]
+        },
+        "scope": {
+          "enum": [
+            "standalone",
+            "hybrid-only"
+          ]
+        },
+        "scheme": {
+          "type": "string",
+          "minLength": 1
+        },
+        "since_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "since_note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "evidence_type": {
+          "enum": [
+            "release-notes",
+            "official-docs",
+            "changelog",
+            "api-reference",
+            "source-code",
+            "issue-tracker"
+          ]
+        },
+        "evidence_strength": {
+          "enum": [
+            "stated",
+            "inferred"
+          ]
+        },
+        "strength_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "evidence_url": {
+          "$ref": "#/$defs/https"
+        },
+        "verified_on": {
+          "$ref": "#/$defs/date"
+        },
+        "checked_on": {
+          "$ref": "#/$defs/date"
+        },
+        "checked_sources": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/https"
+          }
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 400
+        }
       },
-      "if": { "properties": { "status": { "const": "unverified" } } },
-      "then": {
-        "properties": { "since_version": { "const": null } }
-      },
-      "else": { "required": ["evidence_url"] }
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "supported",
+                  "experimental",
+                  "planned",
+                  "not-supported"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "evidence_url",
+              "evidence_type",
+              "evidence_strength",
+              "verified_on"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "checked_on"
+                  ]
+                },
+                {
+                  "required": [
+                    "checked_sources"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "supported",
+                  "experimental"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "since_version"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "planned",
+                  "not-supported",
+                  "not-checked",
+                  "no-statement-found"
+                ]
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "since_version"
+                  ]
+                },
+                {
+                  "required": [
+                    "since_note"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "since_version": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "since_version"
+            ]
+          },
+          "then": {
+            "required": [
+              "since_note"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "scope": {
+                "const": "hybrid-only"
+              }
+            },
+            "required": [
+              "scope"
+            ]
+          },
+          "then": {
+            "required": [
+              "scheme"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "scheme"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "evidence_strength": {
+                "const": "inferred"
+              }
+            },
+            "required": [
+              "evidence_strength"
+            ]
+          },
+          "then": {
+            "required": [
+              "strength_reason"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "strength_reason"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "no-statement-found"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "checked_on",
+              "checked_sources",
+              "note"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "evidence_url"
+                  ]
+                },
+                {
+                  "required": [
+                    "evidence_type"
+                  ]
+                },
+                {
+                  "required": [
+                    "evidence_strength"
+                  ]
+                },
+                {
+                  "required": [
+                    "scope"
+                  ]
+                },
+                {
+                  "required": [
+                    "verified_on"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "not-checked"
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "evidence_url"
+                  ]
+                },
+                {
+                  "required": [
+                    "evidence_type"
+                  ]
+                },
+                {
+                  "required": [
+                    "evidence_strength"
+                  ]
+                },
+                {
+                  "required": [
+                    "scope"
+                  ]
+                },
+                {
+                  "required": [
+                    "verified_on"
+                  ]
+                },
+                {
+                  "required": [
+                    "checked_on"
+                  ]
+                },
+                {
+                  "required": [
+                    "checked_sources"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
     }
   }
 }

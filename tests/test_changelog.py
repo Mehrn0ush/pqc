@@ -1,7 +1,7 @@
 import unittest
 
 from pqc_tracker import changelog as cl
-from tests.helpers import impl, std
+from tests.helpers import claim, impl, std
 
 
 def snap(tag="1.0", rev="05", state="active", iesg="IESG Evaluation", rfc=None):
@@ -107,28 +107,18 @@ class StatusDiffTests(unittest.TestCase):
     def test_implementation_status_change_is_human_confirmed(self):
         before = [impl()]
         base = cl.statuses_of(before, [])
-        after = [
-            impl(
-                algs={
-                    "mlkem": {
-                        "status": "supported",
-                        "since_version": "1.0",
-                        "evidence_url": "https://example.org/e",
-                    }
-                }
-            )
-        ]
+        after = [impl(algs={"mlkem": claim()})]
         (e,) = cl.diff_statuses(base, after, [], "2026-11-12")
         self.assertEqual(
             (e["kind"], e["algorithm"], e["from"], e["to"]),
-            ("status-change", "mlkem", "unverified", "supported"),
+            ("status-change", "mlkem", "not-checked", "supported"),
         )
         self.assertEqual((e["detected_by"], e["human_confirmed"]), ("human", True))
         self.assertEqual(e["url"], "https://example.org/e")
 
     def test_since_version_or_note_edits_are_not_status_changes(self):
         base = cl.statuses_of([impl()], [])
-        after = [impl(algs={"mlkem": {"note": "edited"}})]
+        after = [impl(algs={"mlkem": {"status": "not-checked", "note": "edited"}})]
         self.assertEqual(cl.diff_statuses(base, after, [], "2026-11-12"), [])
 
     def test_standard_status_change(self):

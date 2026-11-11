@@ -45,8 +45,24 @@ class FakeFetcher:
         return self.routes.get(f"{method} {url}", {"number": 1})
 
 
+def claim(**kw):
+    """A valid 'supported' claim; override fields as needed."""
+    base = {
+        "status": "supported",
+        "scope": "standalone",
+        "since_version": "1.0",
+        "evidence_type": "release-notes",
+        "evidence_strength": "stated",
+        "evidence_url": "https://example.org/e",
+        "verified_on": "2026-11-11",
+    }
+    base.update(kw)
+    keep_null = base["status"] in ("supported", "experimental")
+    return {k: v for k, v in base.items() if v is not None or (k == "since_version" and keep_null)}
+
+
 def impl(id="x", name="X", algs=None, source=None):
-    claim = {"status": "unverified", "verified_on": "2026-11-11"}
+    claim = {"status": "not-checked"}
     algs = algs or {}
     return {
         "id": id,
@@ -54,7 +70,7 @@ def impl(id="x", name="X", algs=None, source=None):
         "kind": "library",
         "homepage": "https://example.org/",
         "release_source": source or {"type": "github_release", "repo": "o/x"},
-        "algorithms": {a: {**claim, **algs.get(a, {})} for a in ("mlkem", "mldsa", "slhdsa", "hybrid_kex")},
+        "algorithms": {a: algs.get(a, claim) for a in ("mlkem", "mldsa", "slhdsa", "hybrid_kex")},
     }
 
 

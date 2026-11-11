@@ -13,8 +13,9 @@ Collect and Publish workflows, fail-closed collection, SHA-pinned actions, visib
 
 ## Principles
 
-- **Evidence or "unverified".** A support claim needs an evidence URL to a primary source that was read. Otherwise
-  the status is `unverified`, and it is shown as such.
+- **Evidence or "no statement found".** A support claim needs an evidence URL to a primary source that was read,
+  tagged with its type and whether it is stated or inferred. Otherwise the cell says "no statement found" (with
+  the sources searched) or "not checked". Source code alone never earns "supported".
 - **Automation detects change; a person confirms meaning.** A new release or draft revision never changes a status.
   It adds a changelog entry and opens a `review-needed` issue.
 - **Fail closed.** If a collector errors or returns malformed data, the last good snapshot is kept, the site shows

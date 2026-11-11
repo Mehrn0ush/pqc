@@ -63,7 +63,7 @@ class PlanTests(unittest.TestCase):
 
     def test_body_lists_statuses_but_does_not_change_them(self):
         (a,) = issues.plan([release_entry("1.1")], [], self.IMPLS)
-        self.assertIn("ML-KEM: Unverified", a.body)
+        self.assertIn("ML-KEM: Not checked", a.body)
 
 
 class ApplyTests(unittest.TestCase):

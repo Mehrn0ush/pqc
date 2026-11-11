@@ -10,7 +10,7 @@ NEWSLETTER_URL = "https://silastron.com/newsletter/"
 SILASTRON_URL = "https://silastron.com"
 # TODO(owner): replace with the URL of the October 2026 PQC essay. Until then the link
 # points at the silastron.com home page so the footer never carries a dead link.
-ESSAY_URL = "https://silastron.com/"
+ESSAY_URL = "https://pqc.silastron.com/"
 ESSAY_LABEL = "Read the Silastron PQC essay"
 CONTACT_LICENSES = "Code: Apache-2.0. Data: CC BY 4.0."
 
@@ -29,8 +29,23 @@ STATUS_LABELS = {
     "experimental": "Experimental",
     "planned": "Planned",
     "not-supported": "Not supported",
-    "unverified": "Unverified",
+    "not-checked": "Not checked",
+    "no-statement-found": "No statement found",
 }
+
+EVIDENCE_TYPE_LABELS = {
+    "release-notes": "release notes",
+    "official-docs": "official docs",
+    "changelog": "changelog",
+    "api-reference": "API reference",
+    "source-code": "source code",
+    "issue-tracker": "issue tracker",
+}
+
+HYBRID_COLUMN_HELP = (
+    "Hybrid key exchange means TLS 1.3 groups that combine a classical and a post-quantum key exchange, "
+    "such as X25519MLKEM768. For OpenSSH it means SSH key exchange."
+)
 
 STANDARD_STATUS_LABELS = {
     "final": "Final",
