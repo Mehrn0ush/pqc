@@ -30,3 +30,11 @@ collection, provenance shown on every page, same palette family and system fonts
 1. Schemas + seed data (primary-source research, every claim fetched this session).
 2. Collectors + tests. 3. Site generator + tests. 4. Workflows. 5. Docs/hygiene.
 6. Full local build, inspect HTML with no JS, then push.
+
+## Decisions made while building
+- Hybrid key exchange column means TLS 1.3 groups; for OpenSSH it is SSH key exchange (noted on the row).
+- Machine-collected release dates for projects without GitHub Releases are the tagged commit's date.
+- `status-change` changelog entries are produced at publish time from the previously published
+  `/data/statuses.json` and merged with the previously published changelog (Publish has read-only contents access).
+- Publish also runs after a failed Collect so the "data stale since" notice appears while the last good snapshot is kept.
+- A snapshot that lags the YAML (e.g. a newly added project) is not a validation error.

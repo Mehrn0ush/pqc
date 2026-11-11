@@ -1,0 +1,33 @@
+name: Add a project
+description: Suggest a library, runtime or tool to track
+title: "Add project: "
+labels: ["add-project"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Project name
+    validations:
+      required: true
+  - type: input
+    id: homepage
+    attributes:
+      label: Project homepage (https)
+    validations:
+      required: true
+  - type: input
+    id: releases
+    attributes:
+      label: Where releases are published
+      description: GitHub repository, or the official release feed or notes page.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Primary-source links for any post-quantum support you know of
+      description: Release notes or official documentation. Leave blank if you have none; entries start as unverified.
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it belongs on the tracker

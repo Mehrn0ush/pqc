@@ -1,0 +1,47 @@
+name: Status correction
+description: A status, version or date on the site is wrong or out of date
+title: "Correction: "
+labels: ["status-correction"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks. A status can only change with a primary source (release notes, official documentation, changelog).
+        Blog posts, social media and forum threads are not enough on their own. See CONTRIBUTING.md.
+  - type: input
+    id: project
+    attributes:
+      label: Project or standard
+      placeholder: "OpenSSL, FIPS 206, draft-ietf-tls-mlkem ..."
+    validations:
+      required: true
+  - type: dropdown
+    id: algorithm
+    attributes:
+      label: Algorithm (if a project)
+      options: [ML-KEM, ML-DSA, SLH-DSA, Hybrid key exchange, Not applicable]
+    validations:
+      required: true
+  - type: input
+    id: current
+    attributes:
+      label: What the site says now
+    validations:
+      required: true
+  - type: input
+    id: proposed
+    attributes:
+      label: What you think it should say
+    validations:
+      required: true
+  - type: input
+    id: evidence
+    attributes:
+      label: Evidence URL (primary source, https)
+      placeholder: "https://..."
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
