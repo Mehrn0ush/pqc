@@ -64,9 +64,12 @@ Append-only list of entries. `kind` is `release`, `draft-revision`, `draft-state
 `detected_by: machine`) or `status-change` (`detected_by: human`, `human_confirmed: true`). Entry ids are
 deterministic hashes, so repeating a run adds nothing.
 
-Machine entries are written by Collect. `status-change` entries are produced by Publish by comparing the YAML to
-the previously published `/data/statuses.json`, and exist in the published `/data/changelog.json`, which is the
-union of the repo file, the previously published file and the new entries.
+Machine entries are written by Collect. `status-change` entries are never stored in this file: Build derives them
+from the git history (first-parent commits on `main`) of `data/implementations.yaml` and `data/standards.yaml`, one
+entry per changed status, dated by the commit and keyed by its id. The first commit that has both files is the
+baseline. The published `/data/changelog.json` is the union of this file and the derived entries. A shallow clone
+fails the build, because it would silently drop history. Renamed statuses (`unverified` is now `not-checked`) are
+normalised so a rename is not reported as a change.
 
 ### `data/collection-status.json`  (`collection-status.schema.json`)
 
@@ -79,7 +82,6 @@ union of the repo file, the previously published file and the new entries.
 | --- | --- |
 | `/data/latest.json` | Statuses, latest releases, standards with Datatracker state, freshness fields |
 | `/data/changelog.json` | Full changelog, newest first |
-| `/data/statuses.json` | Compact status map used as the baseline for the next build |
 | `/feed.xml` | Atom feed of the latest 100 changelog entries |
 | `/schemas/*.schema.json` | JSON Schemas |
 

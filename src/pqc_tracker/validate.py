@@ -96,6 +96,11 @@ def validate_data_dir(data_dir: Path, schema_dir: Path | None = None, today: dat
     if not errs:
         errs += semantic_errors(impls, stds, snapshot, today)
         errs += _dups([e["id"] for e in log["entries"]], "changelog")
+        errs += [
+            f"changelog: {e['id']} is a status-change; those are derived from git history, not stored"
+            for e in log["entries"]
+            if e["kind"] == "status-change"
+        ]
     if errs:
         raise ValidationError("\n".join(errs))
     return {
