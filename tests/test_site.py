@@ -254,15 +254,11 @@ class SiteBuildTests(unittest.TestCase):
 
     def test_status_change_flows_into_published_changelog(self):
         base = cl.statuses_of(self.d["implementations"], self.d["standards"])
-        base["implementations"]["go"]["slhdsa"] = "planned"
+        base["implementations"]["go"]["slhdsa"] = "not-checked"
         new = cl.diff_statuses(base, self.d["implementations"], self.d["standards"], "2026-11-12")
         self.assertEqual(len(new), 1)
         self.build(self.ctx(entries=cl.merge_for_publication(new)))
         self.assertIn("Confirmed by a person", self.read("implementations/go/index.html"))
-
-
-if __name__ == "__main__":
-    unittest.main()
 
 
 class CellRenderingTests(unittest.TestCase):
@@ -321,3 +317,7 @@ class CellRenderingTests(unittest.TestCase):
         self.assertRegex(home, r'<th scope="col" title="Hybrid key exchange means TLS 1.3')
         self.assertIn("For OpenSSH it means SSH key exchange.", visible_text(page))
         self.assertIn('title="Hybrid key exchange means TLS 1.3', page)
+
+
+if __name__ == "__main__":
+    unittest.main()
