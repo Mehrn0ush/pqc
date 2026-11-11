@@ -11,7 +11,8 @@ If you cannot confirm a claim, use `no-statement-found` and list every source yo
 `checked_sources`, or leave it `not-checked`. "I found no mention" is not evidence of `not-supported`; that
 status needs the project to say so. Source code alone is `implemented-unstated`; it never earns `supported`, and
 `experimental` is only for a term the project itself uses (quote it in the note). A `planned` cell needs a
-maintainer statement under 12 months old whose target has not passed, and a `maintainer_basis`. If you conclude support from
+maintainer statement under 12 months old whose target has not passed, and a `maintainer_basis`; after that the
+site shows it as "no statement found" until a person re-confirms it. If you conclude support from
 indirect evidence (a bug-fix title, a header), mark the cell `inferred` and give the reason.
 
 ## Correcting or adding a status
