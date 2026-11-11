@@ -48,9 +48,12 @@ def cmd_issues(args) -> int:
     data_dir = _data_dir(args)
     d = validate_data_dir(data_dir)
     entries = load_json(Path(args.entries))
-    actions = issues.apply(HttpFetcher(), args.repo, entries, d["implementations"])
+    if args.dry_run:
+        actions = issues.preview(HttpFetcher(), args.repo, entries, d["implementations"])
+    else:
+        actions = issues.apply(HttpFetcher(), args.repo, entries, d["implementations"])
     for a in actions:
-        print(f"{a.kind}: {a.title}")
+        print(f"{'would ' if args.dry_run else ''}{a.kind}: {a.title}")
     return 0
 
 
@@ -93,7 +96,7 @@ def cmd_build(args) -> int:
     data_dir = _data_dir(args)
     d = validate_data_dir(data_dir)
     now = utcnow()
-    confirmed = history.derive_status_changes(Path(args.repo))
+    confirmed = history.published_status_changes(Path(args.repo))
     entries = changelog.merge_for_publication(d["changelog"]["entries"], confirmed)
     ctx = site.Context(d["implementations"], d["standards"], d["snapshot"], d["status"], entries, now)
     pages = site.build_site(ctx, Path(args.out), ROOT / "schemas")
@@ -115,6 +118,9 @@ def main(argv: list[str] | None = None) -> int:
     i = sub.add_parser("issues")
     i.add_argument("--entries", default="dist/new-entries.json")
     i.add_argument("--repo", required=True)
+    i.add_argument(
+        "--dry-run", action="store_true", help="list what would be opened or commented; change nothing"
+    )
     i.set_defaults(fn=cmd_issues)
     sub.add_parser("check-links").set_defaults(fn=cmd_check_links)
     sub.add_parser("record-failure").set_defaults(fn=cmd_record_failure)

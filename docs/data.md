@@ -12,12 +12,25 @@ One entry per tracked project: `id`, `name`, `kind` (`library`, `runtime`, `prot
 
 Each claim has a `status`:
 
-- `supported`, `experimental`, `planned`, `not-supported`: need `evidence_url`, `evidence_type`
-  (`release-notes`, `official-docs`, `changelog`, `api-reference`, `source-code`, `issue-tracker`),
+- `supported`, `implemented-unstated`, `experimental`, `planned`, `not-supported`: need `evidence_url`,
+  `evidence_type` (`release-notes`, `official-docs`, `changelog`, `api-reference`, `source-code`, `issue-tracker`,
+  `first-party-deployment`),
   `evidence_strength` (`stated` or `inferred`) and `verified_on`. `not-supported` is only for an explicit
   upstream statement. `planned` needs a maintainer's statement; an open request alone is not enough.
 - `inferred` strength needs a one-line `strength_reason`. Source code alone never earns `supported`: a header or
-  module with no statement of support level is at most `experimental`, with `source-code` evidence, `inferred`.
+  module with no statement of support level is `implemented-unstated` ("Implemented, support level not stated"),
+  with `source-code` evidence, `inferred`.
+- `experimental` is only for a project that itself uses that word or an equivalent (preview, draft, unstable, not
+  for production). `experimental_term` holds the term and the `note` must quote it in double quotes.
+- `first-party-deployment`: the organisation that maintains the project says a product of its own ships the
+  algorithm using it (Chromium for BoringSSL, Firefox release notes for NSS). Always `inferred`; the reason names
+  the product and version.
+- `planned` needs `statement_date` (the date of the maintainer's statement), `maintainer_basis` (`kind`:
+  `maintainers-file`, `codeowners`, `org-membership`, `governance-page` or `commit-history`, which is shown
+  as "commit history alone"; plus `detail` and optionally `url`) and optionally `statement_target_date`. The
+  validator fails when the statement is more than 365 days old or the target date has passed, so the cell must
+  be re-confirmed or changed to `no-statement-found` (with the old statement linked in the `note` as history).
+  `pqc-tracker validate` warns 30 days before a cell expires.
 - `scope` (`standalone` or `hybrid-only`) is required for ML-KEM, ML-DSA and SLH-DSA cells that have a support
   status, and `hybrid-only` needs `scheme` (for example `X25519MLKEM768`). The `hybrid_kex` cell has no scope.
 - `supported` and `experimental` need `since_version`, which may be `null` only with a `since_note` saying why.
@@ -61,13 +74,17 @@ Facts only. Replaced atomically; a failed run leaves it untouched.
 ### `data/changelog.json`  (`changelog.schema.json`)
 
 Append-only list of entries. `kind` is `release`, `draft-revision`, `draft-state` (machine-detected,
-`detected_by: machine`) or `status-change` (`detected_by: human`, `human_confirmed: true`). Entry ids are
+`detected_by: machine`), or `status-change` and `tracking-began` (`detected_by: human`, derived, never stored here). Entry ids are
 deterministic hashes, so repeating a run adds nothing.
 
 Machine entries are written by Collect. `status-change` entries are never stored in this file: Build derives them
 from the git history (first-parent commits on `main`) of `data/implementations.yaml` and `data/standards.yaml`, one
-entry per changed status, dated by the commit and keyed by its id. The first commit that has both files is the
-baseline. The published `/data/changelog.json` is the union of this file and the derived entries. A shallow clone
+entry per changed status, dated by the commit and keyed by its id.
+
+`data/changelog_baseline.txt` holds the full SHA of a commit on `main` (comments start with `#`). Nothing before
+that commit is published: its state is shown on `/changes/` as a single "Tracking began <date>" entry and only
+later changes are listed. While the file names no commit, no confirmed status changes are published. A SHA that
+does not exist or is not on the first-parent line of `main` fails the build. To set it, see below. The published `/data/changelog.json` is the union of this file and the derived entries. A shallow clone
 fails the build, because it would silently drop history. Renamed statuses (`unverified` is now `not-checked`) are
 normalised so a rename is not reported as a change.
 
@@ -75,6 +92,18 @@ normalised so a rename is not reported as a change.
 
 `status` (`ok` or `failed`) and `last_good_collected_at` for the most recent Collect run. Drives the
 "data stale since" notice, together with an age check of 72 hours.
+
+### Setting the baseline
+
+After the last pull request of the stack is merged, from an up-to-date `main`:
+
+```bash
+printf '# Status changes are published only from this commit onwards.\n%s\n' "$(git rev-parse HEAD)" > data/changelog_baseline.txt
+git add data/changelog_baseline.txt && git commit -m "Set the changelog baseline" && git push
+```
+
+Use the merge commit of the last merged PR (a squash or rebase merge gives a different SHA; use whatever `HEAD`
+is at that moment). Publish then builds with the baseline.
 
 ## Published API
 

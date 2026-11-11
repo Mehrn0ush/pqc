@@ -47,6 +47,7 @@ KIND_LABEL = {
     "draft-revision": "Draft revision",
     "draft-state": "Draft state",
     "status-change": "Status change",
+    "tracking-began": "Tracking began",
 }
 NAV = [
     ("/", "Readiness"),
@@ -550,6 +551,15 @@ def standards_page(ctx: Context) -> str:
     )
 
 
+def tracking_note(ctx: Context) -> str:
+    if any(e["kind"] == "tracking-began" for e in ctx.entries):
+        return ""
+    return (
+        "<p>Confirmed status changes are listed from the day tracking began, so corrections made while the "
+        "tracker was being built do not appear here. Tracking has not begun yet.</p>"
+    )
+
+
 def changes_page(ctx: Context) -> str:
     body = (
         "<h1>Changes</h1>"
@@ -557,6 +567,7 @@ def changes_page(ctx: Context) -> str:
         "and the IETF Datatracker; they do not change any status. Status changes appear only after a person has "
         "reviewed the evidence.</p>"
         f'<p><a href="/feed.xml">Atom feed</a> · <a href="/data/changelog.json">changelog.json</a></p>'
+        f"{tracking_note(ctx)}"
         f"{changes_list(ctx, ctx.entries)}"
     )
     return page(

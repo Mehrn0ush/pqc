@@ -37,7 +37,7 @@ data/changelog.json        ─┘  append-only, machine-detected entries
 
 | Workflow | Trigger | Permissions | What it does |
 | --- | --- | --- | --- |
-| `collect.yml` | daily + manual | contents: write, issues: write | Queries GitHub and the IETF Datatracker, writes the snapshot and changelog, opens `review-needed` issues (one per project; further changes become comments while one is open), commits the data. On failure it keeps the last snapshot and records the failure. |
+| `collect.yml` | daily + manual | contents: write, issues: write | Queries GitHub and the IETF Datatracker, writes the snapshot and changelog, opens `review-needed` issues (one per project; further changes become comments while one is open), commits the data. On failure it keeps the last snapshot and records the failure. A manual run with `dry_run` runs every collector and prints the diff, commits nothing and opens no issues. |
 | `publish.yml` | push to `main`, after each Collect, manual | contents: read, pages: write, id-token: write | Validates schemas, runs tests, builds the site from the full git history (read-only: it never reads the live site) and deploys with the official Pages actions. |
 | `ci.yml` | pull requests | contents: read | Lint, tests, schema validation, link check on evidence URLs, build. |
 

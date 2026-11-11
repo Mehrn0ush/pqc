@@ -154,7 +154,7 @@ def validate_data_dir(
         errs += [
             f"changelog: {e['id']} is a status-change; those are derived from git history, not stored"
             for e in log["entries"]
-            if e["kind"] == "status-change"
+            if e["kind"] in ("status-change", "tracking-began")
         ]
     if errs:
         raise ValidationError("\n".join(errs))
