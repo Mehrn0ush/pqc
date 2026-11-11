@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 import json
+import re
 import shutil
 from dataclasses import dataclass
 from datetime import datetime
@@ -18,6 +19,7 @@ from pqc_tracker.config import (
     EVIDENCE_TYPE_LABELS,
     HYBRID_COLUMN_HELP,
     ISSUES_URL,
+    MAINTAINER_BASIS_LABELS,
     NEWSLETTER_URL,
     PULSE_URL,
     REPO_URL,
@@ -33,6 +35,7 @@ from pqc_tracker.util import dumps_json, iso_z, parse_iso_z
 STATIC = Path(__file__).parent / "static"
 STATUS_SYMBOL = {
     "supported": "✓",
+    "implemented-unstated": "◌",
     "experimental": "◐",
     "planned": "◔",
     "not-supported": "✕",
@@ -44,6 +47,7 @@ KIND_LABEL = {
     "draft-revision": "Draft revision",
     "draft-state": "Draft state",
     "status-change": "Status change",
+    "tracking-began": "Tracking began",
 }
 NAV = [
     ("/", "Readiness"),
@@ -121,13 +125,30 @@ def badge(status: str, *, hybrid_only: bool = False) -> str:
     )
 
 
-def cell_badge(c: dict) -> str:
-    """Status badge plus scheme (hybrid-only) and the visible 'inferred' marker."""
+def linkify(escaped: str) -> str:
+    """Turn https URLs in already-escaped note text into links."""
+    return re.sub(
+        r"https://[^\s<]+[^\s<.,;:)'\"]",
+        lambda m: f'<a href="{m.group(0)}" rel="noopener">{m.group(0).removeprefix("https://")}</a>',
+        escaped,
+    )
+
+
+def cell_badge(c: dict, reason_href: str | None = None) -> str:
+    """Status badge plus scheme (hybrid-only) and the visible 'inferred' marker.
+
+    With `reason_href` (the matrix) the marker is a link to the reason on the project page; the tooltip is an
+    extra, not the only route.
+    """
     out = badge(c["status"], hybrid_only=c.get("scope") == "hybrid-only")
     if c.get("scheme"):
         out += f'<span class="scheme">only as {esc(c["scheme"])}</span>'
     if c.get("evidence_strength") == "inferred":
-        out += f'<span class="inferred" title="{esc(c["strength_reason"])}">† inferred</span>'
+        title = esc(c["strength_reason"])
+        if reason_href:
+            out += f'<a class="inferred" href="{esc(reason_href)}" title="{title}">† inferred: see reason</a>'
+        else:
+            out += f'<span class="inferred" title="{title}">† inferred</span>'
     return out
 
 
@@ -239,7 +260,8 @@ def provenance_line(ctx: Context) -> str:
 def legend() -> str:
     defs = {
         "supported": "shipped, with a primary source",
-        "experimental": "available but marked experimental or prototype",
+        "implemented-unstated": "code is present in the project, but upstream publishes no statement of its support level",
+        "experimental": "available, and upstream itself calls it experimental, a preview or not for production",
         "planned": "announced by the project, not shipped",
         "not-supported": "stated by the project as not available",
         "not-checked": "nobody has looked yet",
@@ -306,7 +328,8 @@ def matrix(ctx: Context) -> str:
         for alg in ALGORITHMS:
             c = impl["algorithms"][alg]
             since = f'<span class="since">{since_text(c)}</span>' if since_text(c) else ""
-            cells.append(f"<td>{cell_badge(c)}{since}</td>")
+            href = f"/implementations/{impl['id']}/#reason-{alg}"
+            cells.append(f"<td>{cell_badge(c, href)}{since}</td>")
         latest = (
             f'<span class="when">latest {esc(rel["tag"])}'
             + (f", {release_date(rel)}" if rel.get("published_at") else "")
@@ -528,6 +551,15 @@ def standards_page(ctx: Context) -> str:
     )
 
 
+def tracking_note(ctx: Context) -> str:
+    if any(e["kind"] == "tracking-began" for e in ctx.entries):
+        return ""
+    return (
+        "<p>Confirmed status changes are listed from the day tracking began, so corrections made while the "
+        "tracker was being built do not appear here. Tracking has not begun yet.</p>"
+    )
+
+
 def changes_page(ctx: Context) -> str:
     body = (
         "<h1>Changes</h1>"
@@ -535,6 +567,7 @@ def changes_page(ctx: Context) -> str:
         "and the IETF Datatracker; they do not change any status. Status changes appear only after a person has "
         "reviewed the evidence.</p>"
         f'<p><a href="/feed.xml">Atom feed</a> · <a href="/data/changelog.json">changelog.json</a></p>'
+        f"{tracking_note(ctx)}"
         f"{changes_list(ctx, ctx.entries)}"
     )
     return page(
@@ -576,8 +609,14 @@ def note_cell(c: dict) -> str:
         parts.append(f"<strong>Inferred:</strong> {esc(c['strength_reason'])}")
     if c.get("scope") == "hybrid-only":
         parts.append(f"Hybrid only: available only as {esc(c['scheme'])}.")
+    if c["status"] == "planned":
+        basis = c["maintainer_basis"]
+        parts.append(
+            f"Maintainer statement dated {esc(c['statement_date'])}; maintainer status rests on "
+            f"{esc(MAINTAINER_BASIS_LABELS[basis['kind']])}: {esc(basis['detail'])}"
+        )
     if c.get("note"):
-        parts.append(esc(c["note"]))
+        parts.append(linkify(esc(c["note"])))
     return " ".join(parts)
 
 
@@ -587,9 +626,9 @@ def implementation_page(ctx: Context, impl: dict) -> str:
     for alg, (label, std) in ALGORITHMS.items():
         c = impl["algorithms"][alg]
         rows.append(
-            f'<tr><th scope="row"{hybrid_title(alg)}>{esc(label)}<span class="when">{esc(std)}</span></th>'
+            f'<tr id="{alg}"><th scope="row"{hybrid_title(alg)}>{esc(label)}<span class="when">{esc(std)}</span></th>'
             f"<td>{cell_badge(c)}</td><td>{since_cell(c)}</td><td>{evidence_cell(c)}</td>"
-            f"<td>{esc(c.get('verified_on') or c.get('checked_on') or '') or DASH}</td><td>{note_cell(c)}</td></tr>"
+            f'<td>{esc(c.get("verified_on") or c.get("checked_on") or "") or DASH}</td><td id="reason-{alg}">{note_cell(c)}</td></tr>'
         )
     if rel:
         when = f", {release_date(rel, verb=True)}" if rel.get("published_at") else ""
@@ -612,7 +651,7 @@ def implementation_page(ctx: Context, impl: dict) -> str:
         f'<p class="lede">{esc(impl["kind"].capitalize())}. <a href="{esc(impl["homepage"])}" rel="noopener">Project site</a>{repo}</p>'
         f"{provenance_line(ctx)}<h2>Post-quantum support</h2>"
         f"<p>{esc(HYBRID_COLUMN_HELP)}</p>{legend()}"
-        '<div class="scroll" role="region" aria-label="Support statuses, scrollable" tabindex="0"><table>'
+        '<div class="scroll" role="region" aria-label="Support statuses, scrollable" tabindex="0"><table class="evidence">'
         "<caption>Support status per algorithm, with evidence.</caption><thead><tr>"
         '<th scope="col">Algorithm</th><th scope="col">Status</th><th scope="col">Since version</th>'
         '<th scope="col">Evidence</th><th scope="col">Last verified</th><th scope="col">Note</th></tr></thead>'
@@ -639,13 +678,14 @@ def methodology_page(ctx: Context) -> str:
 <h2>What each status means</h2>
 <dl>
 <dt>{badge("supported")}</dt><dd>A release of the project includes the feature and a primary source says so (release notes, official documentation, a changelog or an API reference). "Since version" is the first version we found stating it, which may not be the true first version; where no version is given the cell says "version not stated" and why. Source code alone never earns this status.</dd>
-<dt>{badge("experimental")}</dt><dd>Available, but the project itself calls it experimental, a prototype, or not for production. A header file or module with no statement of support level is shown here at most, marked inferred.</dd>
-<dt>{badge("planned")}</dt><dd>A maintainer has announced it but it has not shipped. An open request in an issue tracker is not enough.</dd>
+<dt>{badge("implemented-unstated")}</dt><dd>Code for it is present in the project (for example a public header), but upstream publishes no statement of its support level. This is what source code alone can earn; it is not a claim that the feature is ready for use.</dd>
+<dt>{badge("experimental")}</dt><dd>Available, and upstream itself uses the word "experimental" or an equivalent (preview, draft, unstable, not for production) for it. The note quotes the exact term; we never choose this label ourselves.</dd>
+<dt>{badge("planned")}</dt><dd>A maintainer has said it is planned, in a statement less than 12 months old whose target has not passed. The cell shows the statement date and why we treat the speaker as a maintainer. An open request in an issue tracker is not enough. After 12 months, or once the stated target passes, the build fails until a person re-confirms it or changes the cell to "no statement found"; the old statement stays linked in the note as history.</dd>
 <dt>{badge("not-supported")}</dt><dd>The project explicitly states that it is not available. We never infer this from silence.</dd>
 <dt>{badge("no-statement-found")}</dt><dd>We looked and found no primary source. The cell lists the date and every source searched. This is not a statement that the feature is missing: it may exist without being documented, or we may have looked in the wrong place.</dd>
 <dt>{badge("not-checked")}</dt><dd>Nobody has looked yet.</dd>
 <dt>{badge("supported", hybrid_only=True)}</dt><dd>The algorithm is available only inside the named hybrid scheme (for example ML-KEM inside X25519MLKEM768), not as a standalone primitive.</dd>
-<dt><span class="inferred">† inferred</span></dt><dd>Every supported or experimental cell is tagged with an evidence type (release notes, official docs, changelog, API reference, source code or issue tracker) and a strength. "Stated" means the upstream source says the feature is supported. "Inferred" means we concluded it from indirect evidence, such as a bug-fix title or a header file; the one-line reason is shown next to the cell.</dd>
+<dt><span class="inferred">† inferred</span></dt><dd>Every supported or experimental cell is tagged with an evidence type (release notes, official docs, changelog, API reference, source code, issue tracker or first-party deployment) and a strength. "Stated" means the upstream source says the feature is supported. "Inferred" means we concluded it from indirect evidence, such as a bug-fix title or a header file; the matrix marker links to the one-line reason on the project page. "First-party deployment" means the organisation that maintains the project says a product of its own ships the algorithm; we infer that this project provides it, and the reason names the product and version.</dd>
 </dl>
 <p>The matrix column "Hybrid key exchange" means TLS 1.3 groups such as X25519MLKEM768, except for OpenSSH, where it is SSH key exchange. Support for an algorithm inside a library does not mean a product built on that library has enabled it, and it does not mean FIPS validation.</p>
 <h2>Two kinds of data</h2>

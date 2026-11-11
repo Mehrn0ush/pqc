@@ -355,6 +355,13 @@ class CellRenderingTests(unittest.TestCase):
         self.assertIn("† inferred", visible_text(home))
         self.assertIn("Only a bug title mentions it.", visible_text(page))
 
+    def test_matrix_marker_links_to_the_reason_on_the_project_page(self):
+        home, page = self.build()
+        self.assertIn('href="/implementations/x/#reason-mldsa"', home)
+        self.assertIn('title="Only a bug title mentions it."', home)
+        self.assertIn('id="reason-mldsa"', page)
+        self.assertIn("† inferred: see reason", visible_text(home))
+
     def test_missing_version_is_never_blank(self):
         home, page = self.build()
         self.assertIn("version not stated", visible_text(home))
@@ -372,6 +379,65 @@ class CellRenderingTests(unittest.TestCase):
         self.assertRegex(home, r'<th scope="col" title="Hybrid key exchange means TLS 1.3')
         self.assertIn("For OpenSSH it means SSH key exchange.", visible_text(page))
         self.assertIn('title="Hybrid key exchange means TLS 1.3', page)
+
+
+class AtomFeedTests(unittest.TestCase):
+    """The RFC 4287 'MUST' rules for the elements this feed uses (no network, no external schema)."""
+
+    ATOM = "{http://www.w3.org/2005/Atom}"
+
+    def feed(self, entries):
+        d = validate_data_dir(ROOT / "data")
+        ctx = site.Context(d["implementations"], d["standards"], d["snapshot"], d["status"], entries, NOW)
+        import xml.etree.ElementTree as ET
+
+        return ET.fromstring(site.feed_xml(ctx))
+
+    def entries(self):
+        base = dict(subject_type="implementation", subject_id="openssl", detected_by="machine")
+        return [
+            dict(id="a" * 16, date="2026-11-10", kind="release", title="OpenSSL: new release 4.1.0", **base),
+            dict(
+                id="b" * 16,
+                date="2026-11-12",
+                kind="tracking-began",
+                title="Tracking began 2026-11-12: 12 projects",
+                url="https://github.com/Mehrn0ush/pqc/commit/abc",
+                **{**base, "detected_by": "human", "subject_type": "tracker", "subject_id": "tracker"},
+            ),
+        ]
+
+    def check(self, root):
+        A = self.ATOM
+        self.assertEqual(root.tag, A + "feed")
+        for req in ("id", "title", "updated"):
+            self.assertEqual(len(root.findall(A + req)), 1, req)
+        self.assertTrue(root.find(A + "author/" + A + "name") is not None)
+        rfc3339 = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+        self.assertRegex(root.find(A + "updated").text, rfc3339)
+        rels = [link.get("rel", "alternate") for link in root.findall(A + "link")]
+        self.assertIn("self", rels)
+        self.assertEqual(rels.count("alternate"), 1)
+        ids = []
+        for e in root.findall(A + "entry"):
+            for req in ("id", "title", "updated"):
+                self.assertEqual(len(e.findall(A + req)), 1, req)
+            self.assertRegex(e.find(A + "updated").text, rfc3339)
+            if e.find(A + "content") is None:
+                alts = [x for x in e.findall(A + "link") if x.get("rel", "alternate") == "alternate"]
+                self.assertTrue(alts, "an entry without content needs an alternate link")
+            ids.append(e.find(A + "id").text)
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertTrue(all(i.startswith("tag:") for i in ids))
+
+    def test_feed_with_entries_follows_rfc_4287(self):
+        root = self.feed(sorted(self.entries(), key=lambda e: e["date"], reverse=True))
+        self.check(root)
+        self.assertEqual(len(root.findall(self.ATOM + "entry")), 2)
+        self.assertEqual(root.find(self.ATOM + "updated").text, "2026-11-12T00:00:00Z")
+
+    def test_empty_feed_follows_rfc_4287(self):
+        self.check(self.feed([]))
 
 
 if __name__ == "__main__":

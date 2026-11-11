@@ -27,7 +27,7 @@
   }
 
   var kind = select("f-kind", "Kind", [["", "All kinds"], ["library", "Library"], ["runtime", "Runtime"], ["protocol tool", "Protocol tool"]]);
-  var status = select("f-status", "Has a claim with status", [["", "Any status"], ["supported", "Supported"], ["experimental", "Experimental"], ["planned", "Planned"], ["not-supported", "Not supported"], ["no-statement-found", "No statement found"], ["not-checked", "Not checked"]]);
+  var status = select("f-status", "Has a claim with status", [["", "Any status"], ["supported", "Supported"], ["implemented-unstated", "Implemented, support level not stated"], ["experimental", "Experimental"], ["planned", "Planned"], ["not-supported", "Not supported"], ["no-statement-found", "No statement found"], ["not-checked", "Not checked"]]);
   var sort = select("f-sort", "Sort by", [["name", "Name (A to Z)"], ["released", "Latest release date (newest first)"]]);
   var count = document.createElement("p");
   count.setAttribute("role", "status");

@@ -36,7 +36,48 @@ def _dups(ids: list[str], what: str) -> list[str]:
     return [f"{what}: duplicate id {i!r}" for i in sorted({i for i in ids if ids.count(i) > 1})]
 
 
-def semantic_errors(impls: list[dict], stds: list[dict], snapshot: dict | None, today: date) -> list[str]:
+PLANNED_MAX_AGE_DAYS = 365
+PLANNED_WARN_DAYS = 30
+
+
+def _planned_errors(where: str, c: dict, today: date, check_expiry: bool) -> list[str]:
+    errs = []
+    stated = date.fromisoformat(c["statement_date"])
+    if stated > today:
+        errs.append(f"{where}: statement_date is in the future")
+    elif check_expiry and (today - stated).days > PLANNED_MAX_AGE_DAYS:
+        errs.append(
+            f"{where}: 'planned' rests on a statement from {c['statement_date']}, more than "
+            f"{PLANNED_MAX_AGE_DAYS} days old; re-confirm it or change the cell to 'no-statement-found'"
+        )
+    if (
+        check_expiry
+        and "statement_target_date" in c
+        and date.fromisoformat(c["statement_target_date"]) < today
+    ):
+        errs.append(
+            f"{where}: the target in the statement ({c['statement_target_date']}) has passed; "
+            "re-confirm it or change the cell to 'no-statement-found'"
+        )
+    return errs
+
+
+def semantic_warnings(impls: list[dict], today: date) -> list[str]:
+    """Planned cells that will expire soon, so a person can re-confirm them before the build fails."""
+    out = []
+    for i in impls:
+        for alg, c in i["algorithms"].items():
+            if c["status"] != "planned":
+                continue
+            left = PLANNED_MAX_AGE_DAYS - (today - date.fromisoformat(c["statement_date"])).days
+            if 0 <= left <= PLANNED_WARN_DAYS:
+                out.append(f"{i['id']}.{alg}: planned statement expires in {left} days; review it")
+    return out
+
+
+def semantic_errors(
+    impls: list[dict], stds: list[dict], snapshot: dict | None, today: date, check_expiry: bool = True
+) -> list[str]:
     errs: list[str] = []
     errs += _dups([i["id"] for i in impls], "implementations")
     errs += _dups([s["id"] for s in stds], "standards")
@@ -47,18 +88,30 @@ def semantic_errors(impls: list[dict], stds: list[dict], snapshot: dict | None, 
             for key in ("verified_on", "checked_on"):
                 if key in c and date.fromisoformat(c[key]) > today:
                     errs.append(f"{where}: {key} is in the future")
-            if c["status"] in ("supported", "experimental") and c.get("evidence_type") == "source-code":
-                if c["status"] == "supported" or c.get("evidence_strength") != "inferred":
+            if c.get("evidence_type") == "source-code":
+                if c["status"] not in ("implemented-unstated", "experimental"):
                     errs.append(
-                        f"{where}: source code alone is at most 'experimental' with inferred strength"
+                        f"{where}: source code alone is at most 'implemented-unstated' "
+                        "(or 'experimental' if upstream uses that word)"
                     )
-            if c.get("evidence_type") == "source-code" and c.get("evidence_strength") == "stated":
-                errs.append(f"{where}: source-code evidence cannot be 'stated'")
+                if c.get("evidence_strength") != "inferred":
+                    errs.append(f"{where}: source-code evidence cannot be 'stated'")
+            if c["status"] == "experimental":
+                term = c.get("experimental_term", "")
+                if f'"{term}"' not in c.get("note", ""):
+                    errs.append(f"{where}: the note must quote the term used, {term!r}, in double quotes")
+            if c.get("evidence_type") == "first-party-deployment":
+                if c["status"] not in ("supported", "experimental", "implemented-unstated"):
+                    errs.append(f"{where}: first-party deployment cannot support {c['status']!r}")
+                if c.get("evidence_strength") != "inferred":
+                    errs.append(f"{where}: first-party-deployment evidence must be 'inferred'")
+            if c["status"] == "planned":
+                errs += _planned_errors(where, c, today, check_expiry)
             if alg == "hybrid_kex" and "scope" in c:
                 errs.append(f"{where}: scope does not apply to the hybrid key exchange column")
             if (
                 alg != "hybrid_kex"
-                and c["status"] in ("supported", "experimental", "planned")
+                and c["status"] in ("supported", "experimental", "implemented-unstated", "planned")
                 and "scope" not in c
             ):
                 errs.append(f"{where}: scope is required")
@@ -75,7 +128,9 @@ def semantic_errors(impls: list[dict], stds: list[dict], snapshot: dict | None, 
     return errs
 
 
-def validate_data_dir(data_dir: Path, schema_dir: Path | None = None, today: date | None = None) -> dict:
+def validate_data_dir(
+    data_dir: Path, schema_dir: Path | None = None, today: date | None = None, check_expiry: bool = True
+) -> dict:
     """Validate all files; return the loaded documents or raise ValidationError listing every problem."""
     schema_dir = schema_dir or ROOT / "schemas"
     today = today or date.today()
@@ -94,12 +149,12 @@ def validate_data_dir(data_dir: Path, schema_dir: Path | None = None, today: dat
     if status is not None:
         errs += schema_errors("collection-status", status, schema_dir)
     if not errs:
-        errs += semantic_errors(impls, stds, snapshot, today)
+        errs += semantic_errors(impls, stds, snapshot, today, check_expiry)
         errs += _dups([e["id"] for e in log["entries"]], "changelog")
         errs += [
             f"changelog: {e['id']} is a status-change; those are derived from git history, not stored"
             for e in log["entries"]
-            if e["kind"] == "status-change"
+            if e["kind"] in ("status-change", "tracking-began")
         ]
     if errs:
         raise ValidationError("\n".join(errs))

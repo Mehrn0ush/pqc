@@ -122,6 +122,11 @@ def ensure_label(fetcher: Fetcher, repo: str) -> None:
         )
 
 
+def preview(fetcher: Fetcher, repo: str, entries: list[dict], impls: list[dict]) -> list[Action]:
+    """What apply() would do. Reads the existing issues; creates and changes nothing."""
+    return plan(entries, list_review_issues(fetcher, repo), {i["id"]: i for i in impls})
+
+
 def apply(fetcher: Fetcher, repo: str, entries: list[dict], impls: list[dict]) -> list[Action]:
     ensure_label(fetcher, repo)
     existing = list_review_issues(fetcher, repo)

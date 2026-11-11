@@ -12,7 +12,7 @@ import yaml
 from pqc_tracker import changelog as cl
 from pqc_tracker import cli, history
 from pqc_tracker.errors import ValidationError
-from pqc_tracker.validate import ROOT
+from pqc_tracker.validate import ROOT, schema_errors
 from tests.helpers import claim, impl, std
 
 
@@ -191,8 +191,9 @@ class BuildUsesHistoryOnlyTests(unittest.TestCase):
             root = Path(tmp)
             repo = FixtureRepo(root / "repo")
             base = [impl(id="a", name="A")]
-            repo.commit(base, [std()], "2026-01-10T12:00:00+00:00")
+            first = repo.commit(base, [std()], "2026-01-10T12:00:00+00:00")
             repo.commit(with_status(base, "a", "mlkem"), [std()], "2026-02-01T12:00:00+00:00")
+            (repo.path / "data/changelog_baseline.txt").write_text(first + "\n")
             out = root / "site"
             import socket
 
@@ -208,6 +209,9 @@ class BuildUsesHistoryOnlyTests(unittest.TestCase):
             published = json.loads((out / "data/changelog.json").read_text())["entries"]
             human = [e for e in published if e["kind"] == "status-change"]
             self.assertEqual([(e["subject_id"], e["to"]) for e in human], [("a", "supported")])
+            self.assertEqual(
+                [e["title"][:15] for e in published if e["kind"] == "tracking-began"], ["Tracking began "]
+            )
             self.assertFalse((out / "data/statuses.json").exists())
 
     def test_machine_entries_in_the_repo_log_are_kept(self):
@@ -258,6 +262,97 @@ class BuildUsesHistoryOnlyTests(unittest.TestCase):
             with self.assertRaises(ValidationError) as cm:
                 validate_data_dir(data)
             self.assertIn("derived from git history", str(cm.exception))
+
+
+class BaselineTests(unittest.TestCase):
+    """Nothing before the recorded baseline commit is published; the baseline itself is one entry."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.repo = FixtureRepo(Path(self.tmp.name) / "r")
+        self.stds = [std()]
+        self.base = [impl("a", "A", {"mlkem": claim(status="not-checked")})]
+        r = self.repo
+        self.c1 = r.commit(self.base, self.stds, "2026-01-10T12:00:00+00:00")
+        # a methodology correction made before tracking began
+        self.c2 = r.commit(with_status(self.base, "a", "mlkem"), self.stds, "2026-01-15T12:00:00+00:00")
+        self.c3 = r.commit(
+            with_status(
+                self.base,
+                "a",
+                "mlkem",
+                status="no-statement-found",
+                checked_on="2026-01-16",
+                checked_sources=["https://example.org/s"],
+                note="n",
+            ),
+            self.stds,
+            "2026-01-20T12:00:00+00:00",
+        )
+
+    def write_baseline(self, text):
+        (self.repo.path / "data/changelog_baseline.txt").write_text(text)
+
+    def test_unset_baseline_publishes_no_status_changes(self):
+        self.assertEqual(history.published_status_changes(self.repo.path), [])
+        self.write_baseline("# comment only\n")
+        self.assertEqual(history.published_status_changes(self.repo.path), [])
+
+    def test_changes_before_the_baseline_are_not_emitted(self):
+        self.write_baseline(f"# set at merge\n{self.c2}\n")
+        got = history.published_status_changes(self.repo.path)
+        kinds = [(e["kind"], e["date"], e.get("to")) for e in got]
+        self.assertEqual(
+            kinds,
+            [("tracking-began", "2026-01-15", None), ("status-change", "2026-01-20", "no-statement-found")],
+        )
+        self.assertEqual(
+            got[0]["title"],
+            "Tracking began 2026-01-15: 1 projects and 1 standards as recorded at that commit",
+        )
+        self.assertTrue(got[0]["url"].endswith(f"/commit/{self.c2}"))
+
+    def test_the_baseline_commit_itself_shows_only_tracking_began(self):
+        self.write_baseline(self.c3 + "\n")
+        got = history.published_status_changes(self.repo.path)
+        self.assertEqual([e["kind"] for e in got], ["tracking-began"])
+
+    def test_short_sha_works_and_ids_are_stable(self):
+        self.write_baseline(self.c2[:10])
+        a = history.published_status_changes(self.repo.path)
+        self.write_baseline(self.c2)
+        self.assertEqual(a, history.published_status_changes(self.repo.path))
+
+    def test_unknown_or_malformed_baseline_fails_closed(self):
+        self.write_baseline("f" * 40)
+        with self.assertRaises(ValidationError):
+            history.published_status_changes(self.repo.path)
+        self.write_baseline("not-a-sha")
+        with self.assertRaises(ValidationError):
+            history.published_status_changes(self.repo.path)
+
+    def test_a_commit_off_the_first_parent_line_is_refused(self):
+        r = self.repo
+        git(r.path, "checkout", "-q", "-b", "topic", self.c1)
+        side = r.commit(self.base, [std(note="side")], "2026-01-12T12:00:00+00:00")
+        git(r.path, "checkout", "-q", "main")
+        git(r.path, "merge", "-q", "--no-ff", "-m", "merge topic", "topic", when="2026-01-25T12:00:00+00:00")
+        self.write_baseline(side)
+        with self.assertRaises(ValidationError):
+            history.published_status_changes(r.path)
+
+    def test_tracking_began_cannot_be_committed_to_the_machine_log(self):
+        e = history.derive_status_changes(self.repo.path, baseline=self.c2)[0]
+        self.assertEqual(e["kind"], "tracking-began")
+        log = {"schema_version": "1.0.0", "entries": [e]}
+        self.assertEqual(schema_errors("changelog", log, ROOT / "schemas"), [])
+
+
+class ShippedBaselineTests(unittest.TestCase):
+    def test_this_repository_ships_the_mechanism_with_no_baseline_set(self):
+        self.assertTrue((ROOT / "data" / "changelog_baseline.txt").exists())
+        self.assertIsNone(history.read_baseline(ROOT))
 
 
 class RealRepositoryTests(unittest.TestCase):

@@ -17,7 +17,7 @@ from pqc_tracker.util import short_hash
 SCHEMA_VERSION = "1.0.0"
 
 
-def _entry(
+def entry(
     *,
     date: str,
     kind: str,
@@ -75,7 +75,7 @@ def diff_snapshots(
             continue
         name = impl_names.get(pid, pid)
         out.append(
-            _entry(
+            entry(
                 date=rel["published_at"] or detected_on,
                 kind="release",
                 subject_type="implementation",
@@ -97,7 +97,7 @@ def diff_snapshots(
             continue  # already published: only active drafts and a draft becoming an RFC are logged
         if old["rev"] != d["rev"] and d["state"] != "rfc":
             out.append(
-                _entry(
+                entry(
                     date=d["updated_at"],
                     kind="draft-revision",
                     subject_type="standard",
@@ -114,7 +114,7 @@ def diff_snapshots(
             was = _draft_label(old) if old["state"] != "active" else (old.get("iesg_state") or "active")
             now_ = _draft_label(d) if d["state"] != "active" else (d.get("iesg_state") or "active")
             out.append(
-                _entry(
+                entry(
                     date=d["updated_at"],
                     kind="draft-state",
                     subject_type="standard",
@@ -166,7 +166,7 @@ def diff_statuses(
         old = base_impl.get(impl["id"])
         if old is None:
             out.append(
-                _entry(
+                entry(
                     date=built_on,
                     kind="status-change",
                     subject_type="implementation",
@@ -183,7 +183,7 @@ def diff_statuses(
                 label = ALGORITHMS[alg][0]
                 was = STATUS_LABELS.get(old.get(alg, ""), "not tracked")
                 out.append(
-                    _entry(
+                    entry(
                         date=built_on,
                         kind="status-change",
                         subject_type="implementation",
@@ -204,7 +204,7 @@ def diff_statuses(
             if std["body"] == "IETF" and std["status"] == "rfc-published":
                 continue  # a document that is already an RFC is not news
             out.append(
-                _entry(
+                entry(
                     date=built_on,
                     kind="status-change",
                     subject_type="standard",
@@ -217,7 +217,7 @@ def diff_statuses(
             )
         elif old != std["status"]:
             out.append(
-                _entry(
+                entry(
                     date=built_on,
                     kind="status-change",
                     subject_type="standard",
