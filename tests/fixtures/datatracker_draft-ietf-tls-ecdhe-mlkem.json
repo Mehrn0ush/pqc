@@ -1,0 +1,23 @@
+{
+ "name": "draft-ietf-tls-ecdhe-mlkem",
+ "rev": "05",
+ "time": "2026-08-10 18:11:17",
+ "state": "RFC",
+ "iesg_state": "RFC Published",
+ "title": "Post-quantum hybrid ECDHE-MLKEM Key Agreement for TLSv1.3",
+ "rev_history": [
+  {
+   "name": "draft-ietf-tls-ecdhe-mlkem",
+   "rev": "05",
+   "published": "2026-05-26T16:24:16.808495+00:00",
+   "url": "/doc/draft-ietf-tls-ecdhe-mlkem/05/",
+   "pages": 12
+  },
+  {
+   "name": "rfc10024",
+   "rev": "rfc10024",
+   "published": "2026-08-10T18:11:15.125756+00:00",
+   "url": "/doc/rfc10024/"
+  }
+ ]
+}

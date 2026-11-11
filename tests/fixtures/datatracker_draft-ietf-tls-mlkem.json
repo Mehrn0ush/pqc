@@ -1,0 +1,24 @@
+{
+ "name": "draft-ietf-tls-mlkem",
+ "rev": "11",
+ "time": "2026-10-12 16:38:10",
+ "state": "Active",
+ "iesg_state": "RFC Ed Queue",
+ "title": "ML-KEM Post-Quantum Key Agreement for TLS 1.3",
+ "rev_history": [
+  {
+   "name": "draft-ietf-tls-mlkem",
+   "rev": "10",
+   "published": "2026-09-02T19:18:25.105128+00:00",
+   "url": "/doc/draft-ietf-tls-mlkem/10/",
+   "pages": 9
+  },
+  {
+   "name": "draft-ietf-tls-mlkem",
+   "rev": "11",
+   "published": "2026-09-17T04:19:00.388459+00:00",
+   "url": "/doc/draft-ietf-tls-mlkem/11/",
+   "pages": 9
+  }
+ ]
+}
