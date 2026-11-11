@@ -247,6 +247,16 @@ class SiteBuildTests(unittest.TestCase):
         self.build(self.ctx(implementations=impls))
         self.assertNotIn("<script>alert", self.read("index.html"))
 
+    def test_fips_206_phrasing_names_nist_page_date_and_sources(self):
+        self.build()
+        text = " ".join(visible_text(self.read("standards/index.html")).split())
+        self.assertRegex(
+            text,
+            r"NIST's project page describes this as in development \(checked 2026-\d\d-\d\d\); "
+            r"no draft publication was found in",
+        )
+        self.assertIn("csrc.nist.gov: drafts-open-for-comment", text)
+
     def test_sitemap_lists_all_pages(self):
         self.build()
         sm = self.read("sitemap.xml")

@@ -26,6 +26,13 @@ class LinkCheckTests(unittest.TestCase):
         }
         self.assertIn("https://example.org/searched", linkcheck.urls_to_check(i, s))
 
+    def test_nist_stated_and_checked_urls_are_checked(self):
+        i, s = self.data()
+        s[0].update(stated_url="https://example.org/stated", checked_sources=["https://example.org/looked"])
+        urls = linkcheck.urls_to_check(i, s)
+        self.assertIn("https://example.org/stated", urls)
+        self.assertIn("https://example.org/looked", urls)
+
     def test_404_is_an_error_403_is_a_warning(self):
         codes = {"https://example.org/ev": 404, "https://example.org/": 403, "https://example.org/s": 200}
         errors, warnings = linkcheck.check(*self.data(), status_of=codes.__getitem__)

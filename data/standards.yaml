@@ -27,18 +27,47 @@
   body: NIST
   status: in-development
   status_date: null
-  source_url: https://csrc.nist.gov/projects/post-quantum-cryptography
+  source_url: https://csrc.nist.gov/projects/post-quantum-cryptography/post-quantum-cryptography-standardization
   verified_on: '2026-11-11'
-  note: NIST's project page says Falcon was selected for ongoing standardization. No FIPS 206 draft publication
-    page was found when checked.
+  note: NIST's CSRC FIPS listing has no entry above FIPS 205, the drafts-open-for-comment list has no
+    FIPS 206, the NIST news list has no draft announcement, and the Federal Register has no notice naming
+    FIPS 206. The pages csrc.nist.gov/pubs/fips/206/ipd and /final return 404.
+  stated_status: in development
+  stated_quote: FALCON was also selected and will be published in FIPS 206 (in development).
+  stated_url: https://csrc.nist.gov/projects/post-quantum-cryptography/post-quantum-cryptography-standardization
+  checked_on: '2026-11-11'
+  checked_sources:
+  - https://csrc.nist.gov/projects/post-quantum-cryptography
+  - https://csrc.nist.gov/projects/post-quantum-cryptography/post-quantum-cryptography-standardization
+  - https://csrc.nist.gov/publications/fips
+  - https://csrc.nist.gov/publications/drafts-open-for-comment
+  - https://csrc.nist.gov/news
+  - https://www.federalregister.gov/documents/search?conditions%5Bterm%5D=%22FIPS+206%22&conditions%5Bagencies%5D%5B%5D=national-institute-of-standards-and-technology
+  no_draft_found: true
 - id: hqc
   title: HQC key-encapsulation standard (number not assigned in the sources read)
   body: NIST
   status: in-development
   status_date: '2025-03-11'
-  source_url: https://csrc.nist.gov/pubs/ir/8545/final
+  source_url: https://csrc.nist.gov/projects/post-quantum-cryptography/post-quantum-cryptography-standardization
   verified_on: '2026-11-11'
-  note: NIST IR 8545 says NIST will develop a standard based on HQC. No draft publication was found when checked.
+  note: NIST's March 2025 news item says 'NIST will draft a standard for HQC and release it for public
+    comment' and the final version is expected 'in approximately two years'. NIST IR 8545 gives no FIPS
+    number. No draft was found.
+  stated_status: selected for standardization
+  stated_quote: HQC was selected for standardization on March 11, 2025.
+  stated_url: https://csrc.nist.gov/projects/post-quantum-cryptography/post-quantum-cryptography-standardization
+  checked_on: '2026-11-11'
+  no_draft_found: true
+  checked_sources:
+  - https://csrc.nist.gov/projects/post-quantum-cryptography
+  - https://csrc.nist.gov/projects/post-quantum-cryptography/post-quantum-cryptography-standardization
+  - https://csrc.nist.gov/news/2025/hqc-announced-as-a-4th-round-selection
+  - https://csrc.nist.gov/pubs/ir/8545/final
+  - https://csrc.nist.gov/publications/fips
+  - https://csrc.nist.gov/publications/drafts-open-for-comment
+  - https://csrc.nist.gov/news
+  - https://www.federalregister.gov/documents/search?conditions%5Bterm%5D=%22FIPS+206%22&conditions%5Bagencies%5D%5B%5D=national-institute-of-standards-and-technology
 - id: nist-additional-signatures
   title: NIST additional digital signature schemes process
   body: NIST
@@ -47,6 +76,12 @@
   source_url: https://csrc.nist.gov/projects/pqc-dig-sig
   verified_on: '2026-11-11'
   note: Round 3 announced 2026-05-14; NIST IR 8610 advances nine candidates.
+  stated_status: Round 3 candidates announced May 14, 2026
+  stated_quote: The Round 3 candidates were announced May 14, 2026.
+  stated_url: https://csrc.nist.gov/projects/pqc-dig-sig
+  checked_on: '2026-11-11'
+  checked_sources:
+  - https://csrc.nist.gov/projects/pqc-dig-sig
 - id: nist-ir-8547
   title: 'NIST IR 8547: Transition to Post-Quantum Cryptography Standards'
   body: NIST

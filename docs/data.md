@@ -36,6 +36,12 @@ One entry per standard or draft: `id`, `title`, `body` (`NIST`, `IETF`), `status
 `verified_on`, `note`. IETF entries also carry `group` and `datatracker_name`, which the collector uses; `rfc` is
 required for `rfc-published`.
 
+An `in-development` entry must record what NIST itself says: `stated_status` (NIST's wording), `stated_quote`
+(a short quote), `stated_url` (the exact page), `checked_on` and `checked_sources` (the listings searched). Set
+`no_draft_found: true` when those listings were searched for a draft publication and none was found; the site then
+says "NIST's project page describes this as ... (checked <date>); no draft publication was found in <sources>".
+URLs that return 404 are named in `note`, not listed as sources.
+
 ## Machine-written
 
 ### `data/snapshots/latest.json`  (`snapshot.schema.json`)
