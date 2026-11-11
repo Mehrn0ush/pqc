@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from pqc_tracker import changelog, ietf, sources
+from pqc_tracker import changelog, expiry, ietf, sources
 from pqc_tracker.errors import CollectionError, TrackerError
 from pqc_tracker.http import Fetcher
 from pqc_tracker.util import atomic_write, dumps_json, iso_z, load_json, utcnow
@@ -63,6 +63,8 @@ def run_collect(
         titles = {s["datatracker_name"]: s["id"] for s in standards if s.get("datatracker_name")}
         entries = changelog.diff_snapshots(previous, new, names, titles, detected_on=now.date().isoformat())
         log = load_json(log_path) if log_path.exists() else {"schema_version": SCHEMA_VERSION, "entries": []}
+        seen = {e["id"] for e in log["entries"]}
+        entries += [e for e in expiry.expiry_entries(implementations, now.date()) if e["id"] not in seen]
         merged = changelog.append_entries(log, entries)
     except TrackerError as exc:
         atomic_write(

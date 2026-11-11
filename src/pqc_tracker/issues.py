@@ -4,7 +4,9 @@ comments instead of new issues, and a change that already has an issue (open or 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
+from pqc_tracker import expiry
 from pqc_tracker.config import ALGORITHMS, REVIEW_LABEL, STATUS_LABELS
 from pqc_tracker.errors import CollectionError
 from pqc_tracker.http import Fetcher
@@ -69,8 +71,8 @@ def plan(entries: list[dict], existing: list[dict], impls_by_id: dict[str, dict]
                     open_by_subject.setdefault(line, issue["number"])
     created_for: dict[str, int] = {}
     for e in entries:
-        if e["kind"] == "status-change":
-            continue  # human-confirmed changes need no review issue
+        if e["kind"] in ("status-change", "tracking-began", "planned-expired"):
+            continue  # human-confirmed changes need no review issue; expiry has its own issues (plan_expiry)
         if entry_marker(e["id"]) in known:
             continue
         body = build_body(e, impls_by_id.get(e["subject_id"]))
@@ -83,6 +85,56 @@ def plan(entries: list[dict], existing: list[dict], impls_by_id: dict[str, dict]
         else:
             actions.append(Action("create", f"{REVIEW_LABEL}: {e['title']}", body))
             created_for[subject_line] = -1
+    return actions
+
+
+def expiry_marker(impl_id: str, alg: str, statement_date: str, phase: str) -> str:
+    return f"<!-- pqc-expiry: {impl_id}.{alg}.{statement_date}.{phase} -->"
+
+
+def plan_expiry(impls: list[dict], existing: list[dict], today: date) -> list[Action]:
+    """One issue per 'planned' cell that has expired, and one per cell that expires within the warning
+    window. An issue with the same marker, open or closed, is never repeated."""
+    known = {line for i in existing for line in (i.get("body") or "").splitlines()}
+    actions: list[Action] = []
+    for impl, alg, c in expiry.planned_cells(impls):
+        left = expiry.days_left(c, today)
+        if left > expiry.WARN_DAYS:
+            continue
+        phase = "expired" if left <= 0 else "expiring"
+        mark = expiry_marker(impl["id"], alg, c["statement_date"], phase)
+        if mark in known:
+            continue
+        what = f"{impl['name']}, {ALGORITHMS[alg][0]}"
+        when = expiry.expires_on(c).isoformat()
+        if phase == "expired":
+            title = f"{REVIEW_LABEL}: {what}: 'planned' statement expired {when}"
+            lead = (
+                f"The 'planned' statement for **{what}** (dated {c['statement_date']}) expired on {when}. "
+                "The site now shows this cell as No statement found, linking the old statement."
+            )
+        else:
+            title = f"{REVIEW_LABEL}: {what}: 'planned' statement expires {when}"
+            lead = (
+                f"The 'planned' statement for **{what}** (dated {c['statement_date']}) expires on {when}, "
+                f"in {left} days. After that the site shows this cell as No statement found."
+            )
+        body = "\n".join(
+            [
+                mark,
+                lead,
+                "",
+                f"Statement: {c['evidence_url']}",
+                "",
+                "Automation does not change `data/implementations.yaml`. Read the project's current "
+                "plans. If a maintainer has restated them, update `statement_date`, `maintainer_basis` "
+                "and the evidence. If not, change the status to `no-statement-found` and keep the old "
+                "statement in the note as history.",
+                "",
+                "Close this issue when reviewed.",
+            ]
+        )
+        actions.append(Action("create", title, body))
     return actions
 
 
@@ -122,15 +174,16 @@ def ensure_label(fetcher: Fetcher, repo: str) -> None:
         )
 
 
-def preview(fetcher: Fetcher, repo: str, entries: list[dict], impls: list[dict]) -> list[Action]:
+def preview(fetcher: Fetcher, repo: str, entries: list[dict], impls: list[dict], today: date) -> list[Action]:
     """What apply() would do. Reads the existing issues; creates and changes nothing."""
-    return plan(entries, list_review_issues(fetcher, repo), {i["id"]: i for i in impls})
+    existing = list_review_issues(fetcher, repo)
+    return plan(entries, existing, {i["id"]: i for i in impls}) + plan_expiry(impls, existing, today)
 
 
-def apply(fetcher: Fetcher, repo: str, entries: list[dict], impls: list[dict]) -> list[Action]:
+def apply(fetcher: Fetcher, repo: str, entries: list[dict], impls: list[dict], today: date) -> list[Action]:
     ensure_label(fetcher, repo)
     existing = list_review_issues(fetcher, repo)
-    actions = plan(entries, existing, {i["id"]: i for i in impls})
+    actions = plan(entries, existing, {i["id"]: i for i in impls}) + plan_expiry(impls, existing, today)
     last_created: dict[str, int] = {}
     for a in actions:
         if a.kind == "create":

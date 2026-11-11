@@ -8,6 +8,7 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
+from pqc_tracker import expiry
 from pqc_tracker.errors import ValidationError
 from pqc_tracker.util import load_json, load_yaml
 
@@ -36,48 +37,31 @@ def _dups(ids: list[str], what: str) -> list[str]:
     return [f"{what}: duplicate id {i!r}" for i in sorted({i for i in ids if ids.count(i) > 1})]
 
 
-PLANNED_MAX_AGE_DAYS = 365
-PLANNED_WARN_DAYS = 30
-
-
-def _planned_errors(where: str, c: dict, today: date, check_expiry: bool) -> list[str]:
-    errs = []
+def _planned_errors(where: str, c: dict, today: date) -> list[str]:
     stated = date.fromisoformat(c["statement_date"])
-    if stated > today:
-        errs.append(f"{where}: statement_date is in the future")
-    elif check_expiry and (today - stated).days > PLANNED_MAX_AGE_DAYS:
-        errs.append(
-            f"{where}: 'planned' rests on a statement from {c['statement_date']}, more than "
-            f"{PLANNED_MAX_AGE_DAYS} days old; re-confirm it or change the cell to 'no-statement-found'"
-        )
-    if (
-        check_expiry
-        and "statement_target_date" in c
-        and date.fromisoformat(c["statement_target_date"]) < today
-    ):
-        errs.append(
-            f"{where}: the target in the statement ({c['statement_target_date']}) has passed; "
-            "re-confirm it or change the cell to 'no-statement-found'"
-        )
+    errs = [f"{where}: statement_date is in the future"] if stated > today else []
+    if "statement_target_date" in c and date.fromisoformat(c["statement_target_date"]) < stated:
+        errs.append(f"{where}: statement_target_date is before statement_date")
     return errs
 
 
 def semantic_warnings(impls: list[dict], today: date) -> list[str]:
-    """Planned cells that will expire soon, so a person can re-confirm them before the build fails."""
+    """Expired and soon-to-expire 'planned' cells. Warnings only: an expired cell is shown as
+    'No statement found' by the build, so nothing here blocks publishing."""
     out = []
-    for i in impls:
-        for alg, c in i["algorithms"].items():
-            if c["status"] != "planned":
-                continue
-            left = PLANNED_MAX_AGE_DAYS - (today - date.fromisoformat(c["statement_date"])).days
-            if 0 <= left <= PLANNED_WARN_DAYS:
-                out.append(f"{i['id']}.{alg}: planned statement expires in {left} days; review it")
+    for i, alg, c in expiry.planned_cells(impls):
+        left = expiry.days_left(c, today)
+        if left <= 0:
+            out.append(
+                f"{i['id']}.{alg}: the 'planned' statement of {c['statement_date']} expired on "
+                f"{expiry.expires_on(c)}; the site shows No statement found. Re-confirm or change the cell"
+            )
+        elif left <= expiry.WARN_DAYS:
+            out.append(f"{i['id']}.{alg}: 'planned' statement expires in {left} days; review it")
     return out
 
 
-def semantic_errors(
-    impls: list[dict], stds: list[dict], snapshot: dict | None, today: date, check_expiry: bool = True
-) -> list[str]:
+def semantic_errors(impls: list[dict], stds: list[dict], snapshot: dict | None, today: date) -> list[str]:
     errs: list[str] = []
     errs += _dups([i["id"] for i in impls], "implementations")
     errs += _dups([s["id"] for s in stds], "standards")
@@ -106,7 +90,7 @@ def semantic_errors(
                 if c.get("evidence_strength") != "inferred":
                     errs.append(f"{where}: first-party-deployment evidence must be 'inferred'")
             if c["status"] == "planned":
-                errs += _planned_errors(where, c, today, check_expiry)
+                errs += _planned_errors(where, c, today)
             if alg == "hybrid_kex" and "scope" in c:
                 errs.append(f"{where}: scope does not apply to the hybrid key exchange column")
             if (
@@ -128,9 +112,7 @@ def semantic_errors(
     return errs
 
 
-def validate_data_dir(
-    data_dir: Path, schema_dir: Path | None = None, today: date | None = None, check_expiry: bool = True
-) -> dict:
+def validate_data_dir(data_dir: Path, schema_dir: Path | None = None, today: date | None = None) -> dict:
     """Validate all files; return the loaded documents or raise ValidationError listing every problem."""
     schema_dir = schema_dir or ROOT / "schemas"
     today = today or date.today()
@@ -149,7 +131,7 @@ def validate_data_dir(
     if status is not None:
         errs += schema_errors("collection-status", status, schema_dir)
     if not errs:
-        errs += semantic_errors(impls, stds, snapshot, today, check_expiry)
+        errs += semantic_errors(impls, stds, snapshot, today)
         errs += _dups([e["id"] for e in log["entries"]], "changelog")
         errs += [
             f"changelog: {e['id']} is a status-change; those are derived from git history, not stored"

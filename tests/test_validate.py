@@ -15,11 +15,11 @@ SCHEMAS = ROOT / "schemas"
 
 class RealDataTests(unittest.TestCase):
     def test_repository_data_is_valid(self):
-        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1), check_expiry=False)
+        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1))
         self.assertGreaterEqual(len(d["implementations"]), 12)
 
     def test_seed_scope_is_complete(self):
-        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1), check_expiry=False)
+        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1))
         ids = {i["id"] for i in d["implementations"]}
         self.assertEqual(
             ids,
@@ -53,7 +53,7 @@ class RealDataTests(unittest.TestCase):
         self.assertEqual(groups, {"tls", "lamps", "pquip"})
 
     def test_every_evidenced_claim_has_evidence_and_date(self):
-        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1), check_expiry=False)
+        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1))
         for i in d["implementations"]:
             for alg, c in i["algorithms"].items():
                 if c["status"] in ("not-checked", "no-statement-found"):
@@ -63,7 +63,7 @@ class RealDataTests(unittest.TestCase):
                 self.assertIn(c["evidence_strength"], ("stated", "inferred"))
 
     def test_every_no_statement_cell_lists_sources_searched(self):
-        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1), check_expiry=False)
+        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1))
         for i in d["implementations"]:
             for alg, c in i["algorithms"].items():
                 if c["status"] == "no-statement-found":
@@ -89,7 +89,7 @@ class NistStatementTests(unittest.TestCase):
         self.assertTrue(schema_errors("standards", [std(status="final", no_draft_found=True)], SCHEMAS))
 
     def test_fips_206_and_hqc_record_what_nist_says_and_where_we_looked(self):
-        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1), check_expiry=False)
+        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1))
         by = {s["id"]: s for s in d["standards"]}
         for sid in ("fips-206", "hqc"):
             s = by[sid]
@@ -360,33 +360,46 @@ class ThirdPassStatusTests(unittest.TestCase):
             missing = {x: v for x, v in c.items() if x != k}
             self.assertTrue(self.schema(missing), k)
 
-    def test_planned_expires_after_twelve_months(self):
-        self.assertEqual(self.errs(claim(status="planned", statement_date="2025-11-12")), [])
-        errs = self.errs(claim(status="planned", statement_date="2025-11-11"))
-        self.assertTrue(any("more than 365 days old" in e and "no-statement-found" in e for e in errs), errs)
-
-    def test_planned_expires_when_target_passes(self):
-        c = claim(status="planned", statement_target_date="2026-06-30")
-        self.assertTrue(any("target" in e and "passed" in e for e in self.errs(c)))
-        c["statement_target_date"] = "2027-06-30"
-        self.assertEqual(self.errs(c), [])
-
-    def test_expiry_check_can_be_skipped_for_shape_tests_only(self):
-        old = [impl(algs={"mlkem": claim(status="planned", statement_date="2020-01-01")})]
-        self.assertTrue(semantic_errors(old, [], None, self.TODAY))
-        self.assertEqual(semantic_errors(old, [], None, self.TODAY, check_expiry=False), [])
-
-    def test_warning_before_a_planned_cell_expires(self):
+    def test_expiry_is_a_warning_never_an_error(self):
         from pqc_tracker.validate import semantic_warnings
 
-        soon = [impl(algs={"mlkem": claim(status="planned", statement_date="2025-12-01")})]
-        self.assertEqual(len(semantic_warnings(soon, self.TODAY)), 1)
-        fresh = [impl(algs={"mlkem": claim(status="planned", statement_date="2026-07-14")})]
-        self.assertEqual(semantic_warnings(fresh, self.TODAY), [])
+        old = [impl(algs={"mlkem": claim(status="planned", statement_date="2020-01-01")})]
+        self.assertEqual(semantic_errors(old, [], None, self.TODAY), [])
+        (w,) = semantic_warnings(old, self.TODAY)
+        self.assertIn("expired on 2021-01-01", w)
+        self.assertIn("No statement found", w)
 
-    def test_real_data_planned_cells_are_current(self):
-        """The build fails, on its own, the day a planned cell goes stale."""
-        validate_data_dir(ROOT / "data")
+    def test_warning_dates_before_on_and_after_expiry(self):
+        from pqc_tracker.validate import semantic_warnings
+
+        cells = [impl(algs={"mlkem": claim(status="planned", statement_date="2026-01-01")})]
+        # expires 2027-01-02 (statement date + 366 days)
+        for today, expect in [
+            (date(2026, 11, 30), 0),  # 33 days left
+            (date(2026, 12, 3), 1),  # 30 days left: first warning
+            (date(2027, 1, 1), 1),  # last valid day
+            (date(2027, 1, 2), 1),  # expired
+            (date(2027, 6, 1), 1),  # still reported while expired
+        ]:
+            got = semantic_warnings(cells, today)
+            self.assertEqual(len(got), expect, (today, got))
+        self.assertIn("expires in 30 days", semantic_warnings(cells, date(2026, 12, 3))[0])
+        self.assertIn("expired on", semantic_warnings(cells, date(2027, 1, 2))[0])
+
+    def test_target_date_passing_expires_the_cell_the_next_day(self):
+        from pqc_tracker.validate import semantic_warnings
+
+        c = claim(status="planned", statement_target_date="2026-11-10")
+        cells = [impl(algs={"mlkem": c})]
+        self.assertIn("expired on 2026-11-11", semantic_warnings(cells, date(2026, 11, 11))[0])
+        self.assertNotIn("expired", semantic_warnings(cells, date(2026, 11, 10))[0])
+
+    def test_target_before_statement_is_an_error(self):
+        c = claim(status="planned", statement_date="2026-07-14", statement_target_date="2026-06-30")
+        self.assertTrue(any("before statement_date" in e for e in self.errs(c)))
+
+    def test_real_data_validates_whatever_the_date(self):
+        validate_data_dir(ROOT / "data", today=date(2099, 1, 1))
 
 
 if __name__ == "__main__":

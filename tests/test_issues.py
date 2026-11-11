@@ -1,4 +1,5 @@
 import unittest
+from datetime import date
 
 from pqc_tracker import issues
 from tests.helpers import FakeFetcher, impl
@@ -71,7 +72,7 @@ class ApplyTests(unittest.TestCase):
         repo = "o/r"
         # No route for the label GET: the fake raises, exactly like a real 404.
         f = FakeFetcher({f"{API}/repos/{repo}/issues?labels=review-needed&state=all&per_page=100&page=1": []})
-        actions = issues.apply(f, repo, [release_entry("1.1")], [impl()])
+        actions = issues.apply(f, repo, [release_entry("1.1")], [impl()], date(2026, 11, 12))
         self.assertEqual(len(actions), 1)
         posts = [(u.split("/repos/o/r")[1], b) for m, u, b in f.calls if m == "POST"]
         self.assertEqual([p[0] for p in posts], ["/labels", "/issues"])
@@ -87,13 +88,13 @@ class ApplyTests(unittest.TestCase):
                 f"{API}/repos/{repo}/issues?labels=review-needed&state=all&per_page=100&page=1": listing,
             }
         )
-        self.assertEqual(issues.apply(f, repo, [release_entry("1.1")], [impl()]), [])
+        self.assertEqual(issues.apply(f, repo, [release_entry("1.1")], [impl()], date(2026, 11, 12)), [])
         self.assertEqual([c for c in f.calls if c[0] == "POST"], [])
 
     def test_preview_reads_issues_but_changes_nothing(self):
         repo = "o/r"
         f = FakeFetcher({f"{API}/repos/{repo}/issues?labels=review-needed&state=all&per_page=100&page=1": []})
-        actions = issues.preview(f, repo, [release_entry("1.1")], [impl()])
+        actions = issues.preview(f, repo, [release_entry("1.1")], [impl()], date(2026, 11, 12))
         self.assertEqual([a.kind for a in actions], ["create"])
         self.assertEqual([c for c in f.calls if c[0] != "GET"], [])
 

@@ -48,6 +48,7 @@ KIND_LABEL = {
     "draft-state": "Draft state",
     "status-change": "Status change",
     "tracking-began": "Tracking began",
+    "planned-expired": "Planned statement expired",
 }
 NAV = [
     ("/", "Readiness"),
@@ -141,6 +142,12 @@ def cell_badge(c: dict, reason_href: str | None = None) -> str:
     extra, not the only route.
     """
     out = badge(c["status"], hybrid_only=c.get("scope") == "hybrid-only")
+    if c.get("expired_planned"):
+        x = c["expired_planned"]
+        out += (
+            f"<span class=\"expired\">previous 'planned' statement expired {esc(x['expired_on'])} · "
+            f'<a href="{esc(x["url"])}" rel="noopener">old statement</a></span>'
+        )
     if c.get("scheme"):
         out += f'<span class="scheme">only as {esc(c["scheme"])}</span>'
     if c.get("evidence_strength") == "inferred":
@@ -590,6 +597,12 @@ def since_cell(c: dict) -> str:
 def evidence_cell(c: dict) -> str:
     if c["status"] == "not-checked":
         return "Not checked yet"
+    if c.get("expired_planned"):
+        x = c["expired_planned"]
+        return (
+            f'<a href="{esc(x["url"])}" rel="noopener">Previous statement</a>'
+            f'<span class="when">dated {esc(x["statement_date"])}, expired {esc(x["expired_on"])}</span>'
+        )
     if c["status"] == "no-statement-found":
         links = "".join(
             f'<li><a href="{esc(u)}" rel="noopener">{esc(u.removeprefix("https://"))}</a></li>'
@@ -615,6 +628,8 @@ def note_cell(c: dict) -> str:
             f"Maintainer statement dated {esc(c['statement_date'])}; maintainer status rests on "
             f"{esc(MAINTAINER_BASIS_LABELS[basis['kind']])}: {esc(basis['detail'])}"
         )
+    if c.get("expired_planned"):
+        parts.append("History, not a current claim:")
     if c.get("note"):
         parts.append(linkify(esc(c["note"])))
     return " ".join(parts)
@@ -680,7 +695,7 @@ def methodology_page(ctx: Context) -> str:
 <dt>{badge("supported")}</dt><dd>A release of the project includes the feature and a primary source says so (release notes, official documentation, a changelog or an API reference). "Since version" is the first version we found stating it, which may not be the true first version; where no version is given the cell says "version not stated" and why. Source code alone never earns this status.</dd>
 <dt>{badge("implemented-unstated")}</dt><dd>Code for it is present in the project (for example a public header), but upstream publishes no statement of its support level. This is what source code alone can earn; it is not a claim that the feature is ready for use.</dd>
 <dt>{badge("experimental")}</dt><dd>Available, and upstream itself uses the word "experimental" or an equivalent (preview, draft, unstable, not for production) for it. The note quotes the exact term; we never choose this label ourselves.</dd>
-<dt>{badge("planned")}</dt><dd>A maintainer has said it is planned, in a statement less than 12 months old whose target has not passed. The cell shows the statement date and why we treat the speaker as a maintainer. An open request in an issue tracker is not enough. After 12 months, or once the stated target passes, the build fails until a person re-confirms it or changes the cell to "no statement found"; the old statement stays linked in the note as history.</dd>
+<dt>{badge("planned")}</dt><dd>A maintainer has said it is planned, in a statement less than 12 months old whose target has not passed. The cell shows the statement date and why we treat the speaker as a maintainer. An open request in an issue tracker is not enough. The statement expires 365 days after its date, or the day after the target it names, whichever comes first. From then on the site shows the cell as "no statement found" with the text "previous 'planned' statement expired <date>" and a link to the old statement; the data file is not rewritten and publishing is not blocked. The expiry is recorded in the changelog as an automatically detected entry dated on the expiry day, and a review-needed issue is opened for the cell, with an earlier one 30 days before expiry. A person then either re-confirms the statement (a new date and maintainer basis) or changes the cell to "no statement found" and keeps the old statement in the note as history.</dd>
 <dt>{badge("not-supported")}</dt><dd>The project explicitly states that it is not available. We never infer this from silence.</dd>
 <dt>{badge("no-statement-found")}</dt><dd>We looked and found no primary source. The cell lists the date and every source searched. This is not a statement that the feature is missing: it may exist without being documented, or we may have looked in the wrong place.</dd>
 <dt>{badge("not-checked")}</dt><dd>Nobody has looked yet.</dd>
