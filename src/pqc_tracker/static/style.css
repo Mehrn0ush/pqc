@@ -99,4 +99,23 @@ details > summary:focus-visible { outline: 2px solid var(--link, currentColor); 
 table.evidence td:nth-child(2) { min-width: 13rem; }
 table.evidence td:nth-child(4) { min-width: 11rem; }
 table.evidence td:nth-child(6) { min-width: 20rem; }
+.card-only, .blk::before { display: none; }
+.blk { display: block; margin-top: 0.3rem; }
+.blk:first-child { margin-top: 0; }
+/* Project pages below 600px: each algorithm is a stacked card instead of a wide table. */
+@media (max-width: 37.5rem) {
+  .scroll.cards { overflow: visible; border: 0; background: none; }
+  table.evidence, table.evidence tbody, table.evidence tr, table.evidence th, table.evidence td { display: block; }
+  table.evidence caption, table.evidence thead {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+  table.evidence tr { border: 1px solid var(--border); border-radius: 6px; background: var(--card); margin: 0 0 0.9rem; padding: 0.7rem 0.85rem; }
+  table.evidence th[scope="row"] { padding: 0 0 0.35rem; border: 0; font-size: 1.05rem; }
+  table.evidence td { padding: 0.4rem 0 0; border: 0; min-width: 0; }
+  table.evidence td.empty { display: none; }
+  table.evidence td::before { content: attr(data-label); display: block; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .card-only { display: block; margin-top: 0.15rem; font-size: 0.8rem; color: var(--muted); }
+  .blk::before { content: attr(data-label) ": "; display: inline; font-weight: 600; color: var(--muted); }
+  .desk, table.evidence .scheme { display: none; }
+}
 .expired { display: block; font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }

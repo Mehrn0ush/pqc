@@ -12,7 +12,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from pqc_tracker import changelog, expiry, history, issues, linkcheck, site, snapshot
+from pqc_tracker import buildinfo, changelog, expiry, history, issues, linkcheck, site, smoke, snapshot
 from pqc_tracker.errors import TrackerError
 from pqc_tracker.http import HttpFetcher
 from pqc_tracker.util import atomic_write, dumps_json, iso_z, load_json, utcnow
@@ -78,6 +78,15 @@ def cmd_record_failure(args) -> int:
     return 0
 
 
+def cmd_smoke_test(args) -> int:
+    problems = smoke.run(
+        Path(args.site_dir), args.url.rstrip("/"), timeout=args.timeout, interval=args.interval
+    )
+    for p in problems:
+        print(f"error: {p}", file=sys.stderr)
+    return 1 if problems else 0
+
+
 def cmd_check_links(args) -> int:
     d = validate_data_dir(_data_dir(args))
     errors, warnings = linkcheck.check(d["implementations"], d["standards"])
@@ -98,7 +107,8 @@ def cmd_build(args) -> int:
     confirmed = history.published_status_changes(Path(args.repo))
     entries = changelog.merge_for_publication(d["changelog"]["entries"], confirmed)
     shown = expiry.effective(d["implementations"], now.date())
-    ctx = site.Context(shown, d["standards"], d["snapshot"], d["status"], entries, now)
+    info = buildinfo.collect(Path(args.repo), data_dir, now)
+    ctx = site.Context(shown, d["standards"], d["snapshot"], d["status"], entries, now, info)
     pages = site.build_site(ctx, Path(args.out), ROOT / "schemas")
     print(
         f"built {len(pages)} pages into {args.out}; {len(confirmed)} confirmed status changes from git history; "
@@ -122,6 +132,12 @@ def main(argv: list[str] | None = None) -> int:
         "--dry-run", action="store_true", help="list what would be opened or commented; change nothing"
     )
     i.set_defaults(fn=cmd_issues)
+    s = sub.add_parser("smoke-test", help="check that the live site serves the build in --site-dir")
+    s.add_argument("--site-dir", default="dist/site")
+    s.add_argument("--url", default="https://pqc.silastron.com")
+    s.add_argument("--timeout", type=float, default=300)
+    s.add_argument("--interval", type=float, default=15)
+    s.set_defaults(fn=cmd_smoke_test)
     sub.add_parser("check-links").set_defaults(fn=cmd_check_links)
     sub.add_parser("record-failure").set_defaults(fn=cmd_record_failure)
     b = sub.add_parser("build")
