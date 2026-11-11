@@ -8,6 +8,7 @@ import shutil
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlparse
 from xml.sax.saxutils import escape as xml_escape
 
 from pqc_tracker import changelog as cl
@@ -412,6 +413,26 @@ def datatracker_flag(std: dict, d: dict | None) -> str:
     return ""
 
 
+def source_label(url: str) -> str:
+    u = urlparse(url)
+    last = u.path.rstrip("/").rsplit("/", 1)[-1]
+    return f"{u.hostname}: {last}" if last else str(u.hostname)
+
+
+def nist_statement(s: dict) -> str:
+    """What NIST itself says about an in-development item, where it says it, and what we searched."""
+    if not s.get("stated_status"):
+        return ""
+    page = f'<a href="{esc(s["stated_url"])}" rel="noopener">project page</a>'
+    out = f"NIST's {page} describes this as {esc(s['stated_status'])} (checked {esc(s['checked_on'])})"
+    if s.get("no_draft_found"):
+        links = ", ".join(
+            f'<a href="{esc(u)}" rel="noopener">{esc(source_label(u))}</a>' for u in s["checked_sources"]
+        )
+        out += f"; no draft publication was found in {links}"
+    return f'<span class="since">{out}. Quote: “{esc(s["stated_quote"])}”</span>'
+
+
 def standards_page(ctx: Context) -> str:
     def row(s: dict) -> str:
         d = ctx.drafts.get(s.get("datatracker_name", ""))
@@ -427,7 +448,7 @@ def standards_page(ctx: Context) -> str:
         status = std_badge(s["status"]) + (
             f' <span class="since">{esc(s["rfc"])}</span>' if s.get("rfc") else ""
         )
-        note = f'<span class="since">{esc(s["note"])}</span>' if s.get("note") else ""
+        note = nist_statement(s) + (f'<span class="since">{esc(s["note"])}</span>' if s.get("note") else "")
         date = esc(s["status_date"]) if s["status_date"] else DASH
         return (
             f'<tr id="{esc(s["id"])}"><th scope="row">{esc(s["title"])}{note}</th>'
@@ -606,7 +627,7 @@ def methodology_page(ctx: Context) -> str:
 <li>This is a snapshot of what we have read, not an audit. Twelve projects and four capabilities only.</li>
 <li>Several projects do not publish dated release notes for post-quantum features; where so, "since version" is left blank.</li>
 <li>Statuses describe the upstream project. Distributions, vendors and product builds may differ.</li>
-<li>NIST status pages can lag or be reorganised. FIPS 206 and the HQC standard are shown as in development because NIST pages describe them that way; check NIST for any draft.</li>
+<li>NIST status pages can lag or be reorganised. FIPS 206 and the HQC standard are shown with NIST's own wording, the page that says it, the date we checked and the NIST listings searched for a draft. Not finding a draft in those listings is not proof that none exists.</li>
 <li>Entries can be out of date between human reviews. The "Last verified" date on each row says when.</li>
 </ul>
 <h2>Data files</h2>

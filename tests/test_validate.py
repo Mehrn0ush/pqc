@@ -71,6 +71,34 @@ class RealDataTests(unittest.TestCase):
                     self.assertTrue(c["checked_on"])
 
 
+class NistStatementTests(unittest.TestCase):
+    def test_in_development_needs_nist_wording_page_date_and_sources(self):
+        self.assertTrue(schema_errors("standards", [std(status="in-development")], SCHEMAS))
+        ok = std(
+            status="in-development",
+            stated_status="in development",
+            stated_quote="q",
+            stated_url="https://example.org/p",
+            checked_on="2026-11-11",
+            checked_sources=["https://example.org/a"],
+            no_draft_found=True,
+        )
+        self.assertEqual(schema_errors("standards", [ok], SCHEMAS), [])
+
+    def test_no_draft_found_only_for_in_development(self):
+        self.assertTrue(schema_errors("standards", [std(status="final", no_draft_found=True)], SCHEMAS))
+
+    def test_fips_206_and_hqc_record_what_nist_says_and_where_we_looked(self):
+        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1))
+        by = {s["id"]: s for s in d["standards"]}
+        for sid in ("fips-206", "hqc"):
+            s = by[sid]
+            self.assertTrue(s["no_draft_found"], sid)
+            self.assertGreaterEqual(len(s["checked_sources"]), 5, sid)
+            self.assertTrue(s["stated_url"].startswith("https://csrc.nist.gov/"), sid)
+            self.assertTrue(s["checked_on"])
+
+
 class SchemaTests(unittest.TestCase):
     def base(self):
         return [impl()]

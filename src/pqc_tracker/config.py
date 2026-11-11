@@ -55,5 +55,4 @@ STANDARD_STATUS_LABELS = {
     "iesg-evaluation": "IESG evaluation",
     "rfc-ed-queue": "RFC Editor queue",
     "rfc-published": "RFC published",
-    "unverified": "Unverified",
 }
