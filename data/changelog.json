@@ -1,4 +1,17 @@
 {
-  "entries": [],
+  "entries": [
+    {
+      "date": "2026-11-11",
+      "detected_by": "machine",
+      "from": "r1rv86",
+      "id": "8c00b1fa24af07e3",
+      "kind": "release",
+      "subject_id": "bouncycastle",
+      "subject_type": "implementation",
+      "title": "Bouncy Castle (Java): new release r1rv87",
+      "to": "r1rv87",
+      "url": "https://github.com/bcgit/bc-java/blob/main/docs/releasenotes.md"
+    }
+  ],
   "schema_version": "1.0.0"
 }

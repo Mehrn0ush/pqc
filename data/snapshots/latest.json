@@ -1,5 +1,5 @@
 {
-  "collected_at": "2026-11-11T10:17:39Z",
+  "collected_at": "2026-11-12T15:15:18Z",
   "drafts": {
     "draft-ietf-lamps-cms-composite-kem": {
       "iesg_state": "RFC Ed Queue",
@@ -183,8 +183,8 @@
     },
     "bouncycastle": {
       "date_source": "official",
-      "published_at": "2026-09-11",
-      "tag": "r1rv86",
+      "published_at": "2026-11-11",
+      "tag": "r1rv87",
       "url": "https://github.com/bcgit/bc-java/blob/main/docs/releasenotes.md"
     },
     "go": {
