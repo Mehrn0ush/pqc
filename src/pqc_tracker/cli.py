@@ -12,7 +12,18 @@ import argparse
 import sys
 from pathlib import Path
 
-from pqc_tracker import buildinfo, changelog, expiry, history, issues, linkcheck, site, smoke, snapshot
+from pqc_tracker import (
+    buildinfo,
+    changelog,
+    expiry,
+    history,
+    issues,
+    linkcheck,
+    site,
+    smoke,
+    snapshot,
+    watchdog,
+)
 from pqc_tracker.errors import TrackerError
 from pqc_tracker.http import HttpFetcher
 from pqc_tracker.util import atomic_write, dumps_json, iso_z, load_json, utcnow
@@ -87,6 +98,22 @@ def cmd_smoke_test(args) -> int:
     return 1 if problems else 0
 
 
+def cmd_watchdog(args) -> int:
+    failed = None
+    if args.run_conclusion:
+        failed = {"name": args.run_name, "conclusion": args.run_conclusion, "url": args.run_url}
+    watchdog.run(
+        args.repo,
+        args.url.rstrip("/"),
+        args.owner or args.repo.split("/")[0],
+        utcnow(),
+        HttpFetcher(),
+        failed_run=failed,
+        dry_run=args.dry_run,
+    )
+    return 0
+
+
 def cmd_check_links(args) -> int:
     d = validate_data_dir(_data_dir(args))
     errors, warnings = linkcheck.check(d["implementations"], d["standards"])
@@ -138,6 +165,17 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--timeout", type=float, default=300)
     s.add_argument("--interval", type=float, default=15)
     s.set_defaults(fn=cmd_smoke_test)
+    w = sub.add_parser("watchdog", help="check the live site is fresh; keep one site-stale issue in step")
+    w.add_argument("--repo", required=True)
+    w.add_argument("--url", default="https://pqc.silastron.com")
+    w.add_argument("--owner", default="", help="who to assign the issue to (default: the repository owner)")
+    w.add_argument("--run-name", default="")
+    w.add_argument(
+        "--run-conclusion", default="", help="set when triggered by a failed Collect or Publish run"
+    )
+    w.add_argument("--run-url", default="")
+    w.add_argument("--dry-run", action="store_true")
+    w.set_defaults(fn=cmd_watchdog)
     sub.add_parser("check-links").set_defaults(fn=cmd_check_links)
     sub.add_parser("record-failure").set_defaults(fn=cmd_record_failure)
     b = sub.add_parser("build")

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from pqc_tracker import expiry, issues, site, snapshot
 from pqc_tracker.validate import ROOT, schema_errors, validate_data_dir
+from tests.fixture_data import FIXTURE_DATA, load_fixture_data
 from tests.helpers import FakeFetcher, claim, impl
 from tests.test_failclosed import STDS, routes
 
@@ -147,7 +148,7 @@ class RenderingTests(unittest.TestCase):
     def build(self, today):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
-        d = validate_data_dir(ROOT / "data")
+        d = load_fixture_data()
         ctx = site.Context(
             expiry.effective(impls(), today),
             d["standards"],
@@ -185,7 +186,7 @@ class BuildDoesNotFailTests(unittest.TestCase):
             import shutil
 
             data = Path(tmp) / "data"
-            shutil.copytree(ROOT / "data", data)
+            shutil.copytree(FIXTURE_DATA, data)
             text = (
                 (data / "implementations.yaml")
                 .read_text()

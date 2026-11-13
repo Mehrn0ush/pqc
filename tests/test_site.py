@@ -8,11 +8,11 @@ from pathlib import Path
 
 from pqc_tracker import changelog as cl
 from pqc_tracker import site
-from pqc_tracker.validate import ROOT, validate_data_dir
+from pqc_tracker.validate import ROOT
+from tests.fixture_data import load_fixture_data
 from tests.helpers import claim, impl
 
 NOW = datetime(2026, 11, 12, 8, 0, 0, tzinfo=UTC)
-PINNED_COLLECTED_AT = "2026-11-11T07:42:48Z"
 
 
 class Text(HTMLParser):
@@ -40,9 +40,7 @@ def visible_text(html_text: str) -> str:
 class SiteBuildTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.d = validate_data_dir(ROOT / "data")
-        # Collect rewrites the snapshot daily; pin its date so these tests do not depend on when they run.
-        cls.d["snapshot"] = {**cls.d["snapshot"], "collected_at": PINNED_COLLECTED_AT}
+        cls.d = load_fixture_data()
         cls.tmp = tempfile.TemporaryDirectory()
         cls.out = Path(cls.tmp.name) / "site"
 
@@ -325,7 +323,7 @@ class CellRenderingTests(unittest.TestCase):
     def build(self):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
-        d = validate_data_dir(ROOT / "data")
+        d = load_fixture_data()
         algs = {
             "mlkem": claim(scope="hybrid-only", scheme="X25519MLKEM768"),
             "mldsa": claim(
@@ -413,7 +411,7 @@ class AtomFeedTests(unittest.TestCase):
     ATOM = "{http://www.w3.org/2005/Atom}"
 
     def feed(self, entries):
-        d = validate_data_dir(ROOT / "data")
+        d = load_fixture_data()
         ctx = site.Context(d["implementations"], d["standards"], d["snapshot"], d["status"], entries, NOW)
         import xml.etree.ElementTree as ET
 

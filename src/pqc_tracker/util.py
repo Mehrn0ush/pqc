@@ -14,8 +14,15 @@ import yaml
 
 from pqc_tracker.errors import ValidationError
 
+CLOCK_ENV = "PQC_NOW"
+
 
 def utcnow() -> datetime:
+    """The one place the program reads the wall clock. `PQC_NOW` (an ISO 8601 UTC time) replaces it: the test
+    suite always sets it, so no test depends on the day it runs, and CI sets it to other days to prove that."""
+    fixed = os.environ.get(CLOCK_ENV)
+    if fixed:
+        return datetime.fromisoformat(fixed.replace("Z", "+00:00")).astimezone(UTC).replace(microsecond=0)
     return datetime.now(UTC).replace(microsecond=0)
 
 

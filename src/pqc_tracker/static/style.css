@@ -119,3 +119,4 @@ table.evidence td:nth-child(6) { min-width: 20rem; }
   .desk, table.evidence .scheme { display: none; }
 }
 .expired { display: block; font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
+.stamp { font-size: 0.85rem; font-weight: 400; color: var(--muted); margin-left: 0.4rem; white-space: nowrap; }

@@ -1,14 +1,17 @@
 import copy
 import hashlib
 import json
-import subprocess
 import tempfile
 import unittest
 from datetime import UTC, datetime
 from pathlib import Path
 
 from pqc_tracker import buildinfo, cli, site, smoke
-from pqc_tracker.validate import ROOT, validate_data_dir
+from pqc_tracker.util import iso_z, utcnow
+from pqc_tracker.validate import ROOT
+from tests.fixture_data import FIXTURE_DATA, load_fixture_data
+from tests.helpers import impl, std
+from tests.test_history import FixtureRepo
 
 NOW = datetime(2026, 11, 12, 8, 0, 0, tzinfo=UTC)
 SHA = "a" * 40
@@ -152,20 +155,25 @@ class RunTests(unittest.TestCase):
 
 
 class BuildInfoTests(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name)
+        self.repo = FixtureRepo(self.root / "repo")
+        self.commit = self.repo.commit([impl("a", "A")], [std()], "2026-01-10T12:00:00+00:00")
+        self.data = load_fixture_data()
+
     def test_build_json_has_commit_time_and_data_hash(self):
-        head = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True
-        ).stdout.strip()
-        info = buildinfo.collect(ROOT, ROOT / "data", NOW)
-        self.assertEqual(info["commit"], head)
+        info = buildinfo.collect(self.repo.path, FIXTURE_DATA, NOW)
+        self.assertEqual(info["commit"], self.commit)
         self.assertEqual(info["built_at"], "2026-11-12T08:00:00Z")
         self.assertEqual(
             info["implementations_sha256"],
-            hashlib.sha256((ROOT / "data/implementations.yaml").read_bytes()).hexdigest(),
+            hashlib.sha256((FIXTURE_DATA / "implementations.yaml").read_bytes()).hexdigest(),
         )
 
     def test_site_writes_build_json_and_links_the_short_sha_in_every_footer(self):
-        d = validate_data_dir(ROOT / "data")
+        d = self.data
         info = {
             "schema_version": "1.0.0",
             "commit": SHA,
@@ -173,31 +181,32 @@ class BuildInfoTests(unittest.TestCase):
             "implementations_sha256": "f" * 64,
         }
         ctx = site.Context(d["implementations"], d["standards"], d["snapshot"], d["status"], [], NOW, info)
-        with tempfile.TemporaryDirectory() as tmp:
-            out = Path(tmp)
-            site.build_site(ctx, out, ROOT / "schemas")
-            self.assertEqual(json.loads((out / "build.json").read_text()), info)
-            for page in out.rglob("*.html"):
-                html = page.read_text()
-                self.assertIn(
-                    f'<a href="https://github.com/Mehrn0ush/pqc/commit/{SHA}" rel="noopener"><code>aaaaaaa</code></a>',
-                    html,
-                    page,
-                )
+        out = self.root / "site"
+        site.build_site(ctx, out, ROOT / "schemas")
+        self.assertEqual(json.loads((out / "build.json").read_text()), info)
+        for page in out.rglob("*.html"):
+            html = page.read_text()
+            self.assertIn(
+                f'<a href="https://github.com/Mehrn0ush/pqc/commit/{SHA}" rel="noopener"><code>aaaaaaa</code></a>',
+                html,
+                page,
+            )
 
     def test_without_build_info_no_build_json_and_no_footer_note(self):
-        d = validate_data_dir(ROOT / "data")
+        d = self.data
         ctx = site.Context(d["implementations"], d["standards"], d["snapshot"], d["status"], [], NOW)
-        with tempfile.TemporaryDirectory() as tmp:
-            out = Path(tmp)
-            site.build_site(ctx, out, ROOT / "schemas")
-            self.assertFalse((out / "build.json").exists())
-            self.assertNotIn("Build <a", (out / "index.html").read_text())
+        out = self.root / "site"
+        site.build_site(ctx, out, ROOT / "schemas")
+        self.assertFalse((out / "build.json").exists())
+        self.assertNotIn("Build <a", (out / "index.html").read_text())
 
-    def test_cli_build_writes_build_json(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            self.assertEqual(cli.main(["build", "--out", tmp]), 0)
-            self.assertEqual(json.loads((Path(tmp) / "build.json").read_text())["schema_version"], "1.0.0")
+    def test_cli_build_writes_build_json_for_the_given_repository(self):
+        out = self.root / "cli-site"
+        args = ["--data-dir", str(FIXTURE_DATA), "build", "--out", str(out), "--repo", str(self.repo.path)]
+        self.assertEqual(cli.main(args), 0)
+        info = json.loads((out / "build.json").read_text())
+        self.assertEqual(info["commit"], self.commit)
+        self.assertEqual(info["built_at"], iso_z(utcnow()))  # the injected clock, PQC_NOW
 
 
 class VendoredAtomSchemaTests(unittest.TestCase):

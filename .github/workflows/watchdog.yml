@@ -1,0 +1,58 @@
+name: Watchdog
+
+# Is the live site still being updated? Independent of Collect and Publish, so it still works when either is
+# broken. Checks the live /build.json and /data/latest.json against main and keeps ONE issue labelled
+# "site-stale" in step with the result (see docs/operations.md). Only writes issues.
+
+on:
+  schedule:
+    - cron: "23 */6 * * *"
+  workflow_dispatch:
+  workflow_run:
+    workflows: [Collect, Publish]
+    types: [completed]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: watchdog
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    name: Check the live site
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    # A completed Collect or Publish raises the alert only when it failed; every other run is the periodic check.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'failure'
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          python -m pip install -r requirements.lock
+          python -m pip install --no-deps -e .
+
+      - name: Periodic check
+        if: github.event_name != 'workflow_run'
+        run: pqc-tracker watchdog --repo "$GITHUB_REPOSITORY" --owner "$GITHUB_REPOSITORY_OWNER"
+
+      - name: Failed Collect or Publish run
+        if: github.event_name == 'workflow_run'
+        run: >
+          pqc-tracker watchdog --repo "$GITHUB_REPOSITORY" --owner "$GITHUB_REPOSITORY_OWNER"
+          --run-name "${{ github.event.workflow_run.name }}"
+          --run-conclusion "${{ github.event.workflow_run.conclusion }}"
+          --run-url "${{ github.event.workflow_run.html_url }}"
