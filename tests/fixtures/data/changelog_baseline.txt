@@ -1,0 +1,3 @@
+# Status changes are published only from this commit onwards.
+# Put the full SHA of the commit on main from which tracking begins on a line below, and commit the file.
+# Until a SHA is here, /changes/ shows no confirmed status changes. See docs/data.md.

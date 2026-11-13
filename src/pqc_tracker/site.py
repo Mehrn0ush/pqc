@@ -195,6 +195,10 @@ def header(path: str) -> str:
     )
 
 
+def collected_day(ctx: Context) -> str:
+    return ctx.collected_at[:10] if ctx.collected_at else "never"
+
+
 def build_note(ctx: Context) -> str:
     if not ctx.build:
         return ""
@@ -204,8 +208,13 @@ def build_note(ctx: Context) -> str:
 
 def footer(ctx: Context) -> str:
     collected = ctx.collected_at[:10] if ctx.collected_at else "never"
+    stamps = (
+        f' data-collected="{esc(ctx.collected_at)}" data-built="{esc(iso_z(ctx.now))}"'
+        if ctx.collected_at
+        else ""
+    )
     return (
-        "<footer>"
+        f"<footer{stamps}>"
         f"<p>Last verified: <strong>{esc(ctx.last_verified)}</strong> (most recent human check of any entry). "
         f"Last collected: <strong>{esc(collected)}</strong> (automated release and draft data)."
         f"{build_note(ctx)}</p>"
@@ -261,7 +270,7 @@ def page(
         '<meta name="twitter:card" content="summary">'
         f"{ld}</head><body>"
         f'{header(path)}<main id="main">{stale_notice(ctx)}{body}</main>{footer(ctx)}'
-        '<script src="/assets/app.js" defer></script></body></html>\n'
+        '<script src="/assets/app.js" defer></script><script src="/assets/stale.js" defer></script></body></html>\n'
     )
 
 
@@ -387,7 +396,7 @@ def home(ctx: Context) -> str:
         "so, and that is not a statement that the feature is missing. There are no scores or rankings: "
         "statuses only.</p>"
         f"{provenance_line(ctx)}"
-        "<h2>Readiness matrix</h2>"
+        f'<h2>Readiness matrix <span class="stamp">collected {esc(collected_day(ctx))}</span></h2>'
         f"{legend()}{matrix(ctx)}"
         f'<p class="provenance">{n_unv} of {len(ctx.implementations) * len(ALGORITHMS)} cells are "no statement found" '
         f"and {n_unchecked} are not checked yet. "
@@ -885,7 +894,7 @@ def build_site(ctx: Context, out_dir: Path, schema_dir: Path) -> list[str]:
     (out_dir / "404.html").write_text(not_found(ctx), encoding="utf-8")
     assets = out_dir / "assets"
     assets.mkdir()
-    for name in ("style.css", "app.js"):
+    for name in ("style.css", "app.js", "stale.js"):
         shutil.copy(STATIC / name, assets / name)
     data = out_dir / "data"
     data.mkdir()

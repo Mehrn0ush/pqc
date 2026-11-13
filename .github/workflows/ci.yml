@@ -75,3 +75,33 @@ jobs:
         run: pqc-tracker build --out dist/site
       - name: Validate feed.xml against the RELAX NG schema in RFC 4287
         run: python .github/scripts/validate_atom.py dist/site/feed.xml
+
+  clock-matrix:
+    name: Tests with the clock at ${{ matrix.days }} days
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        days: [0, 1, 45, 400]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+      - run: |
+          python -m pip install -r requirements.lock
+          python -m pip install --no-deps -e .
+      - name: Run the suite and validation at clock = now + ${{ matrix.days }} days, with the snapshot dated each of 0, 1, 45 and 400 days ahead
+        run: |
+          set -euo pipefail
+          clock=$(date -u -d "+${{ matrix.days }} days" +%Y-%m-%dT%H:%M:%SZ)
+          for collected_days in 0 1 45 400; do
+            collected=$(date -u -d "+${collected_days} days" +%Y-%m-%dT%H:%M:%SZ)
+            echo "::group::clock $clock, collected_at $collected"
+            python .github/scripts/fake_collection.py "$collected"
+            PQC_NOW="$clock" python -m unittest discover -s tests
+            PQC_NOW="$clock" pqc-tracker validate
+            echo "::endgroup::"
+          done

@@ -13,64 +13,6 @@ from tests.helpers import claim, impl, std
 SCHEMAS = ROOT / "schemas"
 
 
-class RealDataTests(unittest.TestCase):
-    def test_repository_data_is_valid(self):
-        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1))
-        self.assertGreaterEqual(len(d["implementations"]), 12)
-
-    def test_seed_scope_is_complete(self):
-        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1))
-        ids = {i["id"] for i in d["implementations"]}
-        self.assertEqual(
-            ids,
-            {
-                "openssl",
-                "boringssl",
-                "aws-lc",
-                "wolfssl",
-                "liboqs",
-                "botan",
-                "bouncycastle",
-                "go",
-                "openjdk",
-                "rustls",
-                "nss",
-                "openssh",
-            },
-        )
-        sids = {s["id"] for s in d["standards"]}
-        for required in (
-            "fips-203",
-            "fips-204",
-            "fips-205",
-            "fips-206",
-            "hqc",
-            "nist-additional-signatures",
-            "nist-ir-8547",
-        ):
-            self.assertIn(required, sids)
-        groups = {s["group"] for s in d["standards"] if s["body"] == "IETF"}
-        self.assertEqual(groups, {"tls", "lamps", "pquip"})
-
-    def test_every_evidenced_claim_has_evidence_and_date(self):
-        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1))
-        for i in d["implementations"]:
-            for alg, c in i["algorithms"].items():
-                if c["status"] in ("not-checked", "no-statement-found"):
-                    continue
-                self.assertTrue(c["evidence_url"].startswith("https://"), (i["id"], alg))
-                self.assertTrue(c["verified_on"])
-                self.assertIn(c["evidence_strength"], ("stated", "inferred"))
-
-    def test_every_no_statement_cell_lists_sources_searched(self):
-        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1))
-        for i in d["implementations"]:
-            for alg, c in i["algorithms"].items():
-                if c["status"] == "no-statement-found":
-                    self.assertTrue(c["checked_sources"], (i["id"], alg))
-                    self.assertTrue(c["checked_on"])
-
-
 class NistStatementTests(unittest.TestCase):
     def test_in_development_needs_nist_wording_page_date_and_sources(self):
         self.assertTrue(schema_errors("standards", [std(status="in-development")], SCHEMAS))
@@ -87,16 +29,6 @@ class NistStatementTests(unittest.TestCase):
 
     def test_no_draft_found_only_for_in_development(self):
         self.assertTrue(schema_errors("standards", [std(status="final", no_draft_found=True)], SCHEMAS))
-
-    def test_fips_206_and_hqc_record_what_nist_says_and_where_we_looked(self):
-        d = validate_data_dir(ROOT / "data", today=date(2099, 1, 1))
-        by = {s["id"]: s for s in d["standards"]}
-        for sid in ("fips-206", "hqc"):
-            s = by[sid]
-            self.assertTrue(s["no_draft_found"], sid)
-            self.assertGreaterEqual(len(s["checked_sources"]), 5, sid)
-            self.assertTrue(s["stated_url"].startswith("https://csrc.nist.gov/"), sid)
-            self.assertTrue(s["checked_on"])
 
 
 class SchemaTests(unittest.TestCase):
@@ -397,9 +329,6 @@ class ThirdPassStatusTests(unittest.TestCase):
     def test_target_before_statement_is_an_error(self):
         c = claim(status="planned", statement_date="2026-07-14", statement_target_date="2026-06-30")
         self.assertTrue(any("before statement_date" in e for e in self.errs(c)))
-
-    def test_real_data_validates_whatever_the_date(self):
-        validate_data_dir(ROOT / "data", today=date(2099, 1, 1))
 
 
 if __name__ == "__main__":

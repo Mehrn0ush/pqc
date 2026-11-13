@@ -57,7 +57,15 @@ jobs:
       - name: Validate schemas
         run: pqc-tracker validate
 
+      # A Publish started by Collect has not changed any code. When nothing outside data/ differs from the
+      # commit that is live, skip the unit tests (data validation, the build and the smoke test still run).
+      # Every other trigger, and any doubt, runs them. The decision lives in publish-gate.sh so it can be tested.
+      - name: Decide whether the unit tests are needed
+        id: gate
+        run: .github/scripts/publish-gate.sh "${{ github.event_name }}" >> "$GITHUB_OUTPUT"
+
       - name: Run tests
+        if: steps.gate.outputs.run_tests == 'true'
         run: python -m unittest discover -s tests
 
       - name: Build site

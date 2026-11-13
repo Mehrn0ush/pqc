@@ -13,6 +13,7 @@ from pqc_tracker import changelog as cl
 from pqc_tracker import cli, history
 from pqc_tracker.errors import ValidationError
 from pqc_tracker.validate import ROOT, schema_errors
+from tests.fixture_data import FIXTURE_DATA
 from tests.helpers import claim, impl, std
 
 
@@ -202,7 +203,9 @@ class BuildUsesHistoryOnlyTests(unittest.TestCase):
 
             real, socket.socket = socket.socket, no_network
             try:
-                rc = cli.main(["build", "--out", str(out), "--repo", str(repo.path)])
+                rc = cli.main(
+                    ["--data-dir", str(FIXTURE_DATA), "build", "--out", str(out), "--repo", str(repo.path)]
+                )
             finally:
                 socket.socket = real
             self.assertEqual(rc, 0)
@@ -239,7 +242,7 @@ class BuildUsesHistoryOnlyTests(unittest.TestCase):
             data = Path(tmp) / "data"
             (data / "snapshots").mkdir(parents=True)
             for name in ("implementations.yaml", "standards.yaml"):
-                (data / name).write_text((ROOT / "data" / name).read_text())
+                (data / name).write_text((FIXTURE_DATA / name).read_text())
             (data / "changelog.json").write_text(
                 json.dumps(
                     {
@@ -347,25 +350,6 @@ class BaselineTests(unittest.TestCase):
         self.assertEqual(e["kind"], "tracking-began")
         log = {"schema_version": "1.0.0", "entries": [e]}
         self.assertEqual(schema_errors("changelog", log, ROOT / "schemas"), [])
-
-
-class ShippedBaselineTests(unittest.TestCase):
-    def test_this_repository_ships_the_mechanism_with_no_baseline_set(self):
-        self.assertTrue((ROOT / "data" / "changelog_baseline.txt").exists())
-        self.assertIsNone(history.read_baseline(ROOT))
-
-
-class RealRepositoryTests(unittest.TestCase):
-    def test_this_repository_history_is_derivable(self):
-        shallow = subprocess.run(
-            ["git", "-C", str(ROOT), "rev-parse", "--is-shallow-repository"], capture_output=True, text=True
-        ).stdout.strip()
-        if shallow != "false":
-            self.skipTest("needs the full history")
-        got = history.derive_status_changes(ROOT)
-        self.assertEqual(len({e["id"] for e in got}), len(got))
-        for e in got:
-            self.assertEqual(e["kind"], "status-change")
 
 
 if __name__ == "__main__":

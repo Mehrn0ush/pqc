@@ -10,7 +10,7 @@ from jsonschema import Draft202012Validator
 
 from pqc_tracker import expiry
 from pqc_tracker.errors import ValidationError
-from pqc_tracker.util import load_json, load_yaml
+from pqc_tracker.util import load_json, load_yaml, utcnow
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -115,7 +115,7 @@ def semantic_errors(impls: list[dict], stds: list[dict], snapshot: dict | None, 
 def validate_data_dir(data_dir: Path, schema_dir: Path | None = None, today: date | None = None) -> dict:
     """Validate all files; return the loaded documents or raise ValidationError listing every problem."""
     schema_dir = schema_dir or ROOT / "schemas"
-    today = today or date.today()
+    today = today or utcnow().date()
     impls = load_yaml(data_dir / "implementations.yaml")
     stds = load_yaml(data_dir / "standards.yaml")
     snap_path = data_dir / "snapshots" / "latest.json"
