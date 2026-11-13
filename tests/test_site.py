@@ -12,6 +12,7 @@ from pqc_tracker.validate import ROOT, validate_data_dir
 from tests.helpers import claim, impl
 
 NOW = datetime(2026, 11, 12, 8, 0, 0, tzinfo=UTC)
+PINNED_COLLECTED_AT = "2026-11-11T07:42:48Z"
 
 
 class Text(HTMLParser):
@@ -40,6 +41,8 @@ class SiteBuildTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.d = validate_data_dir(ROOT / "data")
+        # Collect rewrites the snapshot daily; pin its date so these tests do not depend on when they run.
+        cls.d["snapshot"] = {**cls.d["snapshot"], "collected_at": PINNED_COLLECTED_AT}
         cls.tmp = tempfile.TemporaryDirectory()
         cls.out = Path(cls.tmp.name) / "site"
 
