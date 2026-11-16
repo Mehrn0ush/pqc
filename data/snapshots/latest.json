@@ -1,5 +1,5 @@
 {
-  "collected_at": "2026-11-15T13:55:56Z",
+  "collected_at": "2026-11-16T15:46:01Z",
   "drafts": {
     "draft-ietf-lamps-cms-composite-kem": {
       "iesg_state": "RFC Ed Queue",
@@ -107,10 +107,10 @@
     },
     "draft-ietf-pquip-pqc-hsm-constrained": {
       "iesg_state": "IESG Evaluation",
-      "rev": "11",
+      "rev": "12",
       "rfc": null,
       "state": "active",
-      "updated_at": "2026-11-05",
+      "updated_at": "2026-11-15",
       "url": "https://datatracker.ietf.org/doc/draft-ietf-pquip-pqc-hsm-constrained/"
     },
     "draft-ietf-pquip-pqt-hybrid-terminology": {

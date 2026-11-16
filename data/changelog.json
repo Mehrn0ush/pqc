@@ -11,6 +11,18 @@
       "title": "Bouncy Castle (Java): new release r1rv87",
       "to": "r1rv87",
       "url": "https://github.com/bcgit/bc-java/blob/main/docs/releasenotes.md"
+    },
+    {
+      "date": "2026-11-15",
+      "detected_by": "machine",
+      "from": "11",
+      "id": "0ae5fbf76bcfd9a3",
+      "kind": "draft-revision",
+      "subject_id": "pquip-pqc-hsm-constrained",
+      "subject_type": "standard",
+      "title": "draft-ietf-pquip-pqc-hsm-constrained: revision -12 posted",
+      "to": "12",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-pquip-pqc-hsm-constrained/"
     }
   ],
   "schema_version": "1.0.0"
