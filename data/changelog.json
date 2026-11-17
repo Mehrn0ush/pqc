@@ -23,6 +23,18 @@
       "title": "draft-ietf-pquip-pqc-hsm-constrained: revision -12 posted",
       "to": "12",
       "url": "https://datatracker.ietf.org/doc/draft-ietf-pquip-pqc-hsm-constrained/"
+    },
+    {
+      "date": "2026-11-16",
+      "detected_by": "machine",
+      "from": "v5.14.0",
+      "id": "1149b37b24280b94",
+      "kind": "release",
+      "subject_id": "aws-lc",
+      "subject_type": "implementation",
+      "title": "AWS-LC: new release v5.15.0",
+      "to": "v5.15.0",
+      "url": "https://github.com/aws/aws-lc/releases/tag/v5.15.0"
     }
   ],
   "schema_version": "1.0.0"

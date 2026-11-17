@@ -1,5 +1,5 @@
 {
-  "collected_at": "2026-11-16T15:46:01Z",
+  "collected_at": "2026-11-17T15:59:33Z",
   "drafts": {
     "draft-ietf-lamps-cms-composite-kem": {
       "iesg_state": "RFC Ed Queue",
@@ -165,9 +165,9 @@
   "releases": {
     "aws-lc": {
       "date_source": "official",
-      "published_at": "2026-11-10",
-      "tag": "v5.14.0",
-      "url": "https://github.com/aws/aws-lc/releases/tag/v5.14.0"
+      "published_at": "2026-11-16",
+      "tag": "v5.15.0",
+      "url": "https://github.com/aws/aws-lc/releases/tag/v5.15.0"
     },
     "boringssl": {
       "date_source": "official",
