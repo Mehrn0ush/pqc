@@ -35,6 +35,18 @@
       "title": "AWS-LC: new release v5.15.0",
       "to": "v5.15.0",
       "url": "https://github.com/aws/aws-lc/releases/tag/v5.15.0"
+    },
+    {
+      "date": "2026-11-18",
+      "detected_by": "machine",
+      "from": "NSS 3.133",
+      "id": "ced8758297a1bc24",
+      "kind": "release",
+      "subject_id": "nss",
+      "subject_type": "implementation",
+      "title": "NSS: new release NSS 3.134",
+      "to": "NSS 3.134",
+      "url": "https://firefox-source-docs.mozilla.org/security/nss/releases/nss_3_134.html"
     }
   ],
   "schema_version": "1.0.0"

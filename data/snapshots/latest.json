@@ -1,5 +1,5 @@
 {
-  "collected_at": "2026-11-18T15:39:24Z",
+  "collected_at": "2026-11-19T15:44:35Z",
   "drafts": {
     "draft-ietf-lamps-cms-composite-kem": {
       "iesg_state": "RFC Ed Queue",
@@ -201,9 +201,9 @@
     },
     "nss": {
       "date_source": "official",
-      "published_at": "2026-11-04",
-      "tag": "NSS 3.133",
-      "url": "https://firefox-source-docs.mozilla.org/security/nss/releases/nss_3_133.html"
+      "published_at": "2026-11-18",
+      "tag": "NSS 3.134",
+      "url": "https://firefox-source-docs.mozilla.org/security/nss/releases/nss_3_134.html"
     },
     "openjdk": {
       "date_source": "tag-commit",
