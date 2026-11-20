@@ -47,6 +47,18 @@
       "title": "NSS: new release NSS 3.134",
       "to": "NSS 3.134",
       "url": "https://firefox-source-docs.mozilla.org/security/nss/releases/nss_3_134.html"
+    },
+    {
+      "date": "2026-11-19",
+      "detected_by": "machine",
+      "from": "IESG Evaluation",
+      "id": "5880222211122d23",
+      "kind": "draft-state",
+      "subject_id": "pquip-pqc-hsm-constrained",
+      "subject_type": "standard",
+      "title": "draft-ietf-pquip-pqc-hsm-constrained: Datatracker state IESG Evaluation to RFC Ed Queue",
+      "to": "RFC Ed Queue",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-pquip-pqc-hsm-constrained/"
     }
   ],
   "schema_version": "1.0.0"
