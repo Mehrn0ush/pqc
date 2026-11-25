@@ -1,5 +1,5 @@
 {
-  "collected_at": "2026-11-24T17:44:07Z",
+  "collected_at": "2026-11-25T17:12:59Z",
   "drafts": {
     "draft-ietf-lamps-cms-composite-kem": {
       "iesg_state": "RFC Ed Queue",
@@ -110,7 +110,7 @@
       "rev": "12",
       "rfc": null,
       "state": "active",
-      "updated_at": "2026-11-20",
+      "updated_at": "2026-11-24",
       "url": "https://datatracker.ietf.org/doc/draft-ietf-pquip-pqc-hsm-constrained/"
     },
     "draft-ietf-pquip-pqt-hybrid-terminology": {
@@ -150,7 +150,7 @@
       "rev": "06",
       "rfc": null,
       "state": "active",
-      "updated_at": "2026-10-12",
+      "updated_at": "2026-11-24",
       "url": "https://datatracker.ietf.org/doc/draft-ietf-tls-mldsa/"
     },
     "draft-ietf-tls-mlkem": {
